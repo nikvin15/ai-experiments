@@ -326,17 +326,27 @@ def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str
   "verified_piis": ["Email Address", "Social Security Number"]
 }}"""
 
-    return f"""You are a PII verification assistant. CPU-based models have detected potential PIIs in the input below. Your task is to filter out FALSE POSITIVES by analyzing the context.
+    return f"""You are a PII verification assistant. CPU-based models have detected potential PIIs in the input below. Your task is to verify which ones are TRUE personal information and filter out FALSE POSITIVES.
 
 Input: {{input_text}}
 
 Detected PIIs: {{detected_piis}}
 
-Analyze each detected PII and determine if it's truly personal information or a false positive:
-- Consider the surrounding text and usage context
-- Identify edge cases (e.g., "John Smith School" is a school name, not a person)
-- Check if the pattern matches but isn't actually personal data (e.g., toll-free numbers, system emails)
-- Evaluate if it's used in a business/institutional context vs personal context
+For each detected PII, determine if it's truly personal information:
+
+**VERIFY as TRUE PII if:**
+- It's actual personal data in context (real SSN, email, phone, name, etc.)
+- It's used to identify or contact a specific individual
+- It appears in a context related to a person (employee, patient, customer, user)
+
+**REJECT as FALSE POSITIVE only if:**
+- It's a company/organization name that looks like a person name (e.g., "John Smith School")
+- It's a toll-free business number (1-800, 1-888, etc.)
+- It's a generic system email (e.g., noreply@, support@, admin@)
+- It's a placeholder or example (e.g., "555-0123" in obvious example context)
+- It's a product name, ticket ID, or system identifier
+
+**Default to TRUE:** When in doubt, verify as true PII. It's better to be cautious.
 
 Respond ONLY in JSON format:
 {output_format}
