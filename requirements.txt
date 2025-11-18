@@ -1,0 +1,22 @@
+# Core ML Libraries
+torch>=2.0.0
+transformers>=4.35.0
+numpy>=1.24.0
+
+# Model Optimization
+onnxruntime>=1.16.0
+optimum>=1.14.0
+accelerate>=0.24.0
+
+# Quantization (optional, for 4-bit models)
+bitsandbytes>=0.41.0
+
+# GLiNER (for financial entity verification)
+gliner>=0.2.0
+
+# vLLM (optional, for fast LLM inference)
+# Uncomment if you have GPU and want faster inference
+# vllm>=0.2.0
+
+# Utilities
+tqdm>=4.66.0

@@ -1,0 +1,10 @@
+{"recordId": "sample_001", "input": "Contact john.doe@example.com for support", "entityType": "EMAIL", "entityValue": "john.doe@example.com", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_002", "input": "John Smith Elementary School is in California", "entityType": "PERSON", "entityValue": "John Smith", "metadata": {"source": "sample", "is_true_positive": false}}
+{"recordId": "sample_003", "input": "Send Bitcoin to 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", "entityType": "CRYPTO", "entityValue": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_004", "input": "Patient MRN-123456 was admitted yesterday", "entityType": "MEDICAL_RECORD_NUMBER", "entityValue": "MRN-123456", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_005", "input": "Dr. Sarah Johnson is the lead researcher", "entityType": "PERSON", "entityValue": "Sarah Johnson", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_006", "input": "Call us at (555) 123-4567 for assistance", "entityType": "PHONE_NUMBER", "entityValue": "(555) 123-4567", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_007", "input": "Bank account IBAN: DE89370400440532013000", "entityType": "IBAN", "entityValue": "DE89370400440532013000", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_008", "input": "Patient was prescribed lisinopril 10mg daily", "entityType": "MEDICATION", "entityValue": "lisinopril", "metadata": {"source": "sample", "is_true_positive": true}}
+{"recordId": "sample_009", "input": "The Washington Memorial Hospital opened in 1985", "entityType": "PERSON", "entityValue": "Washington", "metadata": {"source": "sample", "is_true_positive": false}}
+{"recordId": "sample_010", "input": "Email format: username@domain.com (example only)", "entityType": "EMAIL", "entityValue": "username@domain.com", "metadata": {"source": "sample", "is_true_positive": false}}
