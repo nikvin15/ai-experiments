@@ -270,6 +270,11 @@ class LlamaVerifier:
             detected_piis=str(detected_piis)
         )
 
+        logger.info("=" * 80)
+        logger.info("PROMPT SENT TO LLM:")
+        logger.info(prompt)
+        logger.info("=" * 80)
+
         # Generate response
         if self.use_vllm:
             outputs = self.vllm_model.generate([prompt], self.sampling_params)
@@ -289,8 +294,18 @@ class LlamaVerifier:
 
             response = self.tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
 
+        logger.info("=" * 80)
+        logger.info("RAW LLM RESPONSE:")
+        logger.info(response)
+        logger.info("=" * 80)
+
         # Parse response
         verified_piis = parse_batch_verification_response(response, detected_piis, self.with_reasoning)
+
+        logger.info("PARSED RESULT:")
+        logger.info(f"Verified PIIs: {verified_piis}")
+        logger.info("=" * 80)
+
         return verified_piis
 
 

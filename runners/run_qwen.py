@@ -328,6 +328,11 @@ class QwenVerifier:
                 add_generation_prompt=True
             )
 
+            logger.info("=" * 80)
+            logger.info("PROMPT SENT TO LLM:")
+            logger.info(formatted_prompt)
+            logger.info("=" * 80)
+
             outputs = self.vllm_model.generate([formatted_prompt], self.sampling_params)
             response = outputs[0].outputs[0].text
 
@@ -338,6 +343,11 @@ class QwenVerifier:
                 tokenize=False,
                 add_generation_prompt=True
             )
+
+            logger.info("=" * 80)
+            logger.info("PROMPT SENT TO LLM:")
+            logger.info(text_prompt)
+            logger.info("=" * 80)
 
             inputs = self.tokenizer(text_prompt, return_tensors="pt").to(self.device)
 
@@ -356,8 +366,18 @@ class QwenVerifier:
                 skip_special_tokens=True
             )
 
+        logger.info("=" * 80)
+        logger.info("RAW LLM RESPONSE:")
+        logger.info(response)
+        logger.info("=" * 80)
+
         # Parse response
         verified_piis = parse_batch_verification_response(response, detected_piis, self.with_reasoning)
+
+        logger.info("PARSED RESULT:")
+        logger.info(f"Verified PIIs: {verified_piis}")
+        logger.info("=" * 80)
+
         return verified_piis
 
 
