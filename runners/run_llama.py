@@ -23,6 +23,9 @@ from common import (
 class LlamaVerifier:
     """Llama 3.2 based PII verifier using prompting."""
 
+    MODEL_1B = "meta-llama/Llama-3.2-1B-Instruct"
+    MODEL_3B = "meta-llama/Llama-3.2-3B-Instruct"
+
     def __init__(
         self,
         model_path: str,
@@ -47,6 +50,9 @@ class LlamaVerifier:
         logger.info(f"Loading Llama 3.2 model from {model_path}")
         logger.info(f"Device: {device}, 4-bit: {use_4bit}, vLLM: {use_vllm}")
 
+        # Auto-download model if not present
+        self._ensure_model_downloaded()
+
         if use_vllm:
             self._load_vllm_model()
         else:
@@ -55,6 +61,43 @@ class LlamaVerifier:
         self.prompt_template = load_pii_prompt_template()
 
         logger.info("Llama 3.2 model loaded successfully")
+
+    def _ensure_model_downloaded(self):
+        """Download model if not present."""
+        if not self.model_path.exists() or not (self.model_path / "config.json").exists():
+            logger.info(f"Model not found at {self.model_path}")
+
+            # Determine which model to download based on path name
+            model_name = self.MODEL_3B  # Default to 3B
+            if "1b" in str(self.model_path).lower():
+                model_name = self.MODEL_1B
+
+            logger.info(f"Downloading {model_name} from HuggingFace...")
+            logger.info("This may take several minutes on first run...")
+            logger.info("Note: Llama models require HuggingFace authentication")
+            logger.info("Set HF_TOKEN environment variable if you get authentication errors")
+
+            try:
+                # Download model and tokenizer
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float16
+                )
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+                # Save to specified path
+                self.model_path.mkdir(parents=True, exist_ok=True)
+                model.save_pretrained(self.model_path)
+                tokenizer.save_pretrained(self.model_path)
+
+                logger.info(f"Model downloaded and saved to {self.model_path}")
+            except Exception as e:
+                logger.error(f"Failed to download model: {e}")
+                logger.error("Please check:")
+                logger.error("1. Internet connection")
+                logger.error("2. HuggingFace token is set (export HF_TOKEN=your_token)")
+                logger.error("3. You have access to Llama models")
+                raise
 
     def _load_transformers_model(self):
         """Load model using Transformers library."""

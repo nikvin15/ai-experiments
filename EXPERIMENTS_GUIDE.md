@@ -61,41 +61,52 @@ ai-experiments/
 
 ---
 
-## Quick Start (5 Minutes)
+## Quick Start (3 Minutes)
 
-### Step 1: Setup
+### Step 1: Setup Virtual Environment
 
 ```bash
 cd ai-experiments
+
+# Create virtual environment
+python3 -m venv env
+
+# Activate virtual environment
+source env/bin/activate  # Linux/Mac
+# OR
+env\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# For GPU models with CUDA 11.8
+pip install torch --index-url https://download.pytorch.org/whl/cu118
 
 # Run setup script
 bash quickstart.sh
 
 # This will:
-# - Install dependencies
 # - Create directories
 # - Generate sample test data (200 test cases)
 ```
 
-### Step 2: Download DistilBERT Model
+### Step 2: Run First Experiment
 
-```bash
-# Download DistilBERT (most important model for testing)
-python3 -c "from transformers import AutoModel, AutoTokenizer; \
-  AutoModel.from_pretrained('ai4privacy/distilbert_finetuned_ai4privacy_v2').save_pretrained('./models/distilbert_ai4privacy'); \
-  AutoTokenizer.from_pretrained('ai4privacy/distilbert_finetuned_ai4privacy_v2').save_pretrained('./models/distilbert_ai4privacy')"
-```
-
-### Step 3: Run First Experiment
+Models are **automatically downloaded** on first run!
 
 ```bash
 # Run DistilBERT on sample data
+# Model will be downloaded automatically on first run
 python3 runners/run_distilbert.py \
   --input data/sample_test.jsonl \
   --output results/distilbert_sample.jsonl \
   --model-path models/distilbert_ai4privacy \
   --batch-size 32
 ```
+
+**Note:** First run takes a few minutes to download the model. Subsequent runs are instant.
+
+### Step 3: View Results
 
 **Expected Output:**
 ```
@@ -130,8 +141,6 @@ Throughput:
 
 Results saved to: results/distilbert_sample.jsonl
 ```
-
-### Step 4: View Results
 
 ```bash
 # View first result

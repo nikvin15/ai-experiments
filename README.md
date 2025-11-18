@@ -68,21 +68,58 @@ Each line in output JSONL file will have:
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Virtual Environment Setup (Recommended)
 
+Create and activate a virtual environment to isolate dependencies:
+
+**Linux/Mac:**
 ```bash
 cd ai-experiments
-
-# For CPU models
-pip install -r requirements.txt
-
-# For GPU models (additional)
-pip install torch --index-url https://download.pytorch.org/whl/cu118  # CUDA 11.8
-pip install vllm  # For LLM inference
+python3 -m venv env
+source env/bin/activate
 ```
 
-### 2. Download Models
+**Windows:**
+```bash
+cd ai-experiments
+python3 -m venv env
+env\Scripts\activate
+```
 
+### 2. Install Dependencies
+
+**For CPU models:**
+```bash
+pip install -r requirements.txt
+```
+
+**For GPU models with CUDA 11.8:**
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu118
+pip install -r requirements.txt
+pip install vllm  # Optional: For faster LLM inference
+```
+
+### 3. Model Auto-Download
+
+**Models are downloaded automatically when you run a runner for the first time.** The models will be cached in the `models/` directory you specify with `--model-path`.
+
+For example:
+```bash
+# First run will download the model automatically
+python runners/run_distilbert.py \
+  --input data/test_emails.jsonl \
+  --output results/distilbert_results.jsonl \
+  --model-path models/distilbert_ai4privacy \
+  --batch-size 32
+```
+
+**Note**: Llama models require HuggingFace authentication. Set your token:
+```bash
+export HF_TOKEN=your_token_here
+```
+
+**Manual Download (Optional)**: If you prefer to pre-download models:
 ```bash
 # DistilBERT AI4Privacy (66M params)
 python -c "from transformers import AutoModel, AutoTokenizer; \

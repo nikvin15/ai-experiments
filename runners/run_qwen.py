@@ -23,6 +23,10 @@ from common import (
 class QwenVerifier:
     """Qwen 2.5 based PII verifier using prompting."""
 
+    MODEL_05B = "Qwen/Qwen2.5-0.5B-Instruct"
+    MODEL_15B = "Qwen/Qwen2.5-1.5B-Instruct"
+    MODEL_3B = "Qwen/Qwen2.5-3B-Instruct"
+
     def __init__(
         self,
         model_path: str,
@@ -47,6 +51,9 @@ class QwenVerifier:
         logger.info(f"Loading Qwen 2.5 model from {model_path}")
         logger.info(f"Device: {device}, 4-bit: {use_4bit}, vLLM: {use_vllm}")
 
+        # Auto-download model if not present
+        self._ensure_model_downloaded()
+
         if use_vllm:
             self._load_vllm_model()
         else:
@@ -55,6 +62,46 @@ class QwenVerifier:
         self.prompt_template = load_pii_prompt_template()
 
         logger.info("Qwen 2.5 model loaded successfully")
+
+    def _ensure_model_downloaded(self):
+        """Download model if not present."""
+        if not self.model_path.exists() or not (self.model_path / "config.json").exists():
+            logger.info(f"Model not found at {self.model_path}")
+
+            # Determine which model to download based on path name
+            path_str = str(self.model_path).lower()
+            if "0.5b" in path_str or "05b" in path_str:
+                model_name = self.MODEL_05B
+            elif "1.5b" in path_str or "15b" in path_str:
+                model_name = self.MODEL_15B
+            else:
+                model_name = self.MODEL_3B  # Default to 3B
+
+            logger.info(f"Downloading {model_name} from HuggingFace...")
+            logger.info("This may take several minutes on first run...")
+
+            try:
+                # Download model and tokenizer
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float16,
+                    trust_remote_code=True
+                )
+                tokenizer = AutoTokenizer.from_pretrained(
+                    model_name,
+                    trust_remote_code=True
+                )
+
+                # Save to specified path
+                self.model_path.mkdir(parents=True, exist_ok=True)
+                model.save_pretrained(self.model_path)
+                tokenizer.save_pretrained(self.model_path)
+
+                logger.info(f"Model downloaded and saved to {self.model_path}")
+            except Exception as e:
+                logger.error(f"Failed to download model: {e}")
+                logger.error("Please check your internet connection and HuggingFace access")
+                raise
 
     def _load_transformers_model(self):
         """Load model using Transformers library."""

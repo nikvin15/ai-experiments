@@ -15,12 +15,14 @@ from pathlib import Path
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from common import (
     JSONLReader, JSONLWriter, PerformanceTracker,
-    create_result_record, batch_generator, get_device, logger
+    create_result_record, get_device, logger
 )
 
 
 class DistilBertVerifier:
     """DistilBERT-based PII verifier."""
+
+    MODEL_NAME = "ai4privacy/distilbert_finetuned_ai4privacy_v2"
 
     def __init__(self, model_path: str, device: str = "cpu", use_onnx: bool = False):
         """
@@ -38,12 +40,38 @@ class DistilBertVerifier:
         logger.info(f"Loading DistilBERT model from {model_path}")
         logger.info(f"Device: {device}, ONNX: {use_onnx}")
 
+        # Auto-download model if not present
+        self._ensure_model_downloaded()
+
         if use_onnx:
             self._load_onnx_model()
         else:
             self._load_pytorch_model()
 
         logger.info("DistilBERT model loaded successfully")
+
+    def _ensure_model_downloaded(self):
+        """Download model if not present."""
+        if not self.model_path.exists() or not (self.model_path / "config.json").exists():
+            logger.info(f"Model not found at {self.model_path}")
+            logger.info(f"Downloading {self.MODEL_NAME} from HuggingFace...")
+            logger.info("This may take a few minutes on first run...")
+
+            try:
+                # Download model and tokenizer
+                model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME)
+                tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
+
+                # Save to specified path
+                self.model_path.mkdir(parents=True, exist_ok=True)
+                model.save_pretrained(self.model_path)
+                tokenizer.save_pretrained(self.model_path)
+
+                logger.info(f"Model downloaded and saved to {self.model_path}")
+            except Exception as e:
+                logger.error(f"Failed to download model: {e}")
+                logger.error("Please check your internet connection and HuggingFace access")
+                raise
 
     def _load_pytorch_model(self):
         """Load PyTorch model."""
@@ -55,7 +83,7 @@ class DistilBertVerifier:
     def _load_onnx_model(self):
         """Load ONNX optimized model."""
         try:
-            import onnxruntime as ort
+            import onnxruntime as ort  # type: ignore
 
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
 
@@ -90,8 +118,6 @@ class DistilBertVerifier:
         Returns:
             List of (verified, confidence, reason) tuples
         """
-        start_time = time.time()
-
         # Tokenize inputs
         inputs = self.tokenizer(
             texts,
@@ -122,7 +148,7 @@ class DistilBertVerifier:
         import numpy as np
         results = []
 
-        for i, (logit, entity_type, entity_value) in enumerate(zip(logits, entity_types, entity_values)):
+        for logit, entity_type, _ in zip(logits, entity_types, entity_values):
             # Apply softmax to get probabilities
             probs = np.exp(logit) / np.sum(np.exp(logit))
 
@@ -200,7 +226,6 @@ def main():
 
     with JSONLWriter(args.output) as writer:
         batch = []
-        batch_records = []
 
         for record in reader.read():
             batch.append(record)

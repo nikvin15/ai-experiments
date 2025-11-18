@@ -21,6 +21,8 @@ from common import (
 class GlinerVerifier:
     """GLiNER-based financial entity verifier."""
 
+    MODEL_NAME = "urchade/gliner_base"
+
     def __init__(self, model_path: str, device: str = "cpu"):
         """
         Initialize GLiNER verifier.
@@ -37,12 +39,37 @@ class GlinerVerifier:
 
         try:
             from gliner import GLiNER
+
+            # Auto-download model if not present
+            self._ensure_model_downloaded(GLiNER)
+
             self.model = GLiNER.from_pretrained(str(self.model_path))
             self.model.to(device)
             logger.info("GLiNER model loaded successfully")
         except ImportError:
             logger.error("gliner package not installed. Install with: pip install gliner")
             raise
+
+    def _ensure_model_downloaded(self, GLiNER):
+        """Download model if not present."""
+        if not self.model_path.exists() or not list(self.model_path.glob("*.safetensors")):
+            logger.info(f"Model not found at {self.model_path}")
+            logger.info(f"Downloading {self.MODEL_NAME} from HuggingFace...")
+            logger.info("This may take a few minutes on first run...")
+
+            try:
+                # Download model
+                model = GLiNER.from_pretrained(self.MODEL_NAME)
+
+                # Save to specified path
+                self.model_path.mkdir(parents=True, exist_ok=True)
+                model.save_pretrained(str(self.model_path))
+
+                logger.info(f"Model downloaded and saved to {self.model_path}")
+            except Exception as e:
+                logger.error(f"Failed to download model: {e}")
+                logger.error("Please check your internet connection and HuggingFace access")
+                raise
 
         # Financial entity types GLiNER supports
         self.entity_types = [

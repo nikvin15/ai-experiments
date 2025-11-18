@@ -23,6 +23,8 @@ from common import (
 class PhiBertVerifier:
     """PHI-BERT based medical entity verifier."""
 
+    MODEL_NAME = "obi/deid_bert_i2b2"
+
     def __init__(self, model_path: str, device: str = "cpu"):
         """
         Initialize PHI-BERT verifier.
@@ -37,6 +39,9 @@ class PhiBertVerifier:
         logger.info(f"Loading PHI-BERT model from {model_path}")
         logger.info(f"Device: {device}")
 
+        # Auto-download model if not present
+        self._ensure_model_downloaded()
+
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
         self.model = AutoModelForTokenClassification.from_pretrained(self.model_path)
         self.model.to(self.device)
@@ -47,6 +52,29 @@ class PhiBertVerifier:
 
         logger.info("PHI-BERT model loaded successfully")
         logger.info(f"Supported labels: {list(self.id2label.values())}")
+
+    def _ensure_model_downloaded(self):
+        """Download model if not present."""
+        if not self.model_path.exists() or not (self.model_path / "config.json").exists():
+            logger.info(f"Model not found at {self.model_path}")
+            logger.info(f"Downloading {self.MODEL_NAME} from HuggingFace...")
+            logger.info("This may take a few minutes on first run...")
+
+            try:
+                # Download model and tokenizer
+                model = AutoModelForTokenClassification.from_pretrained(self.MODEL_NAME)
+                tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
+
+                # Save to specified path
+                self.model_path.mkdir(parents=True, exist_ok=True)
+                model.save_pretrained(self.model_path)
+                tokenizer.save_pretrained(self.model_path)
+
+                logger.info(f"Model downloaded and saved to {self.model_path}")
+            except Exception as e:
+                logger.error(f"Failed to download model: {e}")
+                logger.error("Please check your internet connection and HuggingFace access")
+                raise
 
     def verify(self, text: str, entity_type: str, entity_value: str) -> tuple:
         """
