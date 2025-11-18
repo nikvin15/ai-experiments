@@ -270,7 +270,7 @@ def create_result_record(
 
 def load_pii_prompt_template() -> str:
     """
-    Load prompt template for LLM-based verification.
+    Load prompt template for LLM-based verification (DEPRECATED - single entity).
 
     Returns:
         Prompt template string
@@ -296,9 +296,57 @@ Respond in JSON format:
 Response:"""
 
 
+def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str:
+    """
+    Load prompt template for batch PII verification.
+
+    Args:
+        with_reasoning: If True, include reasoning in output
+
+    Returns:
+        Prompt template string for batch verification
+    """
+    if with_reasoning:
+        output_format = """{{
+  "results": [
+    {{
+      "pii": "Email Address",
+      "verified": true,
+      "reason": "Valid email used for user contact in legitimate context"
+    }},
+    {{
+      "pii": "Phone Number",
+      "verified": false,
+      "reason": "1-800 number is a toll-free business line, not personal information"
+    }}
+  ]
+}}"""
+    else:
+        output_format = """{{
+  "verified_piis": ["Email Address", "Social Security Number"]
+}}"""
+
+    return f"""You are a PII verification assistant. CPU-based models have detected potential PIIs in the input below. Your task is to filter out FALSE POSITIVES by analyzing the context.
+
+Input: {{input_text}}
+
+Detected PIIs: {{detected_piis}}
+
+Analyze each detected PII and determine if it's truly personal information or a false positive:
+- Consider the surrounding text and usage context
+- Identify edge cases (e.g., "John Smith School" is a school name, not a person)
+- Check if the pattern matches but isn't actually personal data (e.g., toll-free numbers, system emails)
+- Evaluate if it's used in a business/institutional context vs personal context
+
+Respond ONLY in JSON format:
+{output_format}
+
+Response:"""
+
+
 def parse_llm_response(response: str) -> Dict:
     """
-    Parse LLM response and extract verification result.
+    Parse LLM response and extract verification result (DEPRECATED - single entity).
 
     Args:
         response: Raw LLM response
@@ -338,6 +386,100 @@ def parse_llm_response(response: str) -> Dict:
             "confidence": 0.5,
             "reason": f"Parse error: {str(e)}"
         }
+
+
+def parse_batch_verification_response(response: str, detected_piis: List[str], with_reasoning: bool = False):
+    """
+    Parse LLM response for batch PII verification.
+
+    Args:
+        response: Raw LLM response
+        detected_piis: Original list of detected PIIs
+        with_reasoning: Whether reasoning mode was used
+
+    Returns:
+        - If with_reasoning=False: List of verified PII names
+        - If with_reasoning=True: List of dicts with pii, verified, reason
+    """
+    try:
+        # Try to find JSON in response
+        start = response.find('{')
+        end = response.rfind('}') + 1
+
+        if start >= 0 and end > start:
+            json_str = response[start:end]
+            result = json.loads(json_str)
+
+            if with_reasoning:
+                # Expecting: {"results": [{"pii": "...", "verified": true, ...}]}
+                if "results" in result and isinstance(result["results"], list):
+                    return result["results"]
+                else:
+                    # Fallback: assume all detected PIIs are verified
+                    logger.warning("Unexpected reasoning format, using fallback")
+                    return [
+                        {
+                            "pii": pii,
+                            "verified": True,
+                            "reason": "Parse error - assuming verified"
+                        }
+                        for pii in detected_piis
+                    ]
+            else:
+                # Expecting: {"verified_piis": ["Email Address", "SSN"]}
+                if "verified_piis" in result and isinstance(result["verified_piis"], list):
+                    return result["verified_piis"]
+                else:
+                    # Fallback: return all detected PIIs
+                    logger.warning("Unexpected simple format, using fallback")
+                    return detected_piis
+
+        else:
+            # No JSON found, use heuristic fallback
+            logger.warning("No JSON found in response, using fallback")
+            if with_reasoning:
+                # Return all as verified
+                return [
+                    {
+                        "pii": pii,
+                        "verified": True,
+                        "reason": "No JSON found - assuming verified"
+                    }
+                    for pii in detected_piis
+                ]
+            else:
+                # Return all detected PIIs
+                return detected_piis
+
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in batch verification: {e}")
+        # Return fallback
+        if with_reasoning:
+            return [
+                {
+                    "pii": pii,
+                    "verified": True,
+                    "reason": f"JSON parse error: {str(e)}"
+                }
+                for pii in detected_piis
+            ]
+        else:
+            return detected_piis
+
+    except Exception as e:
+        logger.error(f"Error parsing batch verification response: {e}")
+        # Return fallback
+        if with_reasoning:
+            return [
+                {
+                    "pii": pii,
+                    "verified": True,
+                    "reason": f"Parse error: {str(e)}"
+                }
+                for pii in detected_piis
+            ]
+        else:
+            return detected_piis
 
 
 def check_gpu_available() -> bool:

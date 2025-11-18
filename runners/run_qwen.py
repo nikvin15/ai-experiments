@@ -16,7 +16,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from common import (
     JSONLReader, JSONLWriter, PerformanceTracker,
     create_result_record, get_device, logger,
-    load_pii_prompt_template, parse_llm_response
+    load_pii_prompt_template, parse_llm_response,
+    load_batch_verification_prompt_template, parse_batch_verification_response
 )
 
 
@@ -31,8 +32,9 @@ class QwenVerifier:
         self,
         model_path: str,
         device: str = "cuda",
-        use_4bit: bool = False,
-        use_vllm: bool = False
+        disable_quantization: bool = False,
+        use_vllm: bool = False,
+        with_reasoning: bool = False
     ):
         """
         Initialize Qwen verifier.
@@ -40,16 +42,24 @@ class QwenVerifier:
         Args:
             model_path: Path to Qwen model
             device: Device to run on (cuda recommended)
-            use_4bit: Whether to use 4-bit quantization
-            use_vllm: Whether to use vLLM for inference
+            disable_quantization: If True, use FP16 instead of 4-bit (default: False, 4-bit enabled)
+            use_vllm: Whether to use vLLM for inference (forces FP16, no quantization)
+            with_reasoning: If True, include detailed reasoning in verification output
         """
         self.model_path = Path(model_path)
         self.device = device
-        self.use_4bit = use_4bit
+        self.disable_quantization = disable_quantization
         self.use_vllm = use_vllm
+        self.with_reasoning = with_reasoning
+
+        # 4-bit is DEFAULT unless disabled or using vLLM
+        self.use_4bit = not disable_quantization and not use_vllm
 
         logger.info(f"Loading Qwen 2.5 model from {model_path}")
-        logger.info(f"Device: {device}, 4-bit: {use_4bit}, vLLM: {use_vllm}")
+        logger.info(f"Device: {device}, 4-bit: {self.use_4bit}, vLLM: {use_vllm}, Reasoning: {with_reasoning}")
+
+        if use_vllm and not disable_quantization:
+            logger.warning("vLLM does not support quantization - using FP16")
 
         # Auto-download model if not present
         self._ensure_model_downloaded()
@@ -59,7 +69,11 @@ class QwenVerifier:
         else:
             self._load_transformers_model()
 
+        # Load OLD prompt template (deprecated - for backward compatibility)
         self.prompt_template = load_pii_prompt_template()
+
+        # Load NEW batch verification prompt template
+        self.batch_prompt_template = load_batch_verification_prompt_template(with_reasoning)
 
         logger.info("Qwen 2.5 model loaded successfully")
 
@@ -229,7 +243,7 @@ class QwenVerifier:
 
     def verify_batch(self, texts: list, entity_types: list, entity_values: list) -> list:
         """
-        Verify batch of entities.
+        Verify batch of entities (DEPRECATED - single entity per inference).
 
         Args:
             texts: List of context texts
@@ -281,15 +295,81 @@ class QwenVerifier:
 
             return results
 
+    def verify_piis(self, input_text: str, detected_piis: list):
+        """
+        Verify multiple PIIs detected in a single input (NEW - batch verification).
+
+        Args:
+            input_text: The input text or JSON
+            detected_piis: List of PII names detected by CPU models
+
+        Returns:
+            - If with_reasoning=False: List of verified PII names
+            - If with_reasoning=True: List of dicts with pii, verified, reason
+        """
+        # Create prompt
+        prompt_content = self.batch_prompt_template.format(
+            input_text=input_text,
+            detected_piis=str(detected_piis)
+        )
+
+        # Format for Qwen chat template
+        messages = [
+            {"role": "system", "content": "You are a helpful PII verification assistant."},
+            {"role": "user", "content": prompt_content}
+        ]
+
+        # Generate response
+        if self.use_vllm:
+            # vLLM handles chat format internally
+            formatted_prompt = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+
+            outputs = self.vllm_model.generate([formatted_prompt], self.sampling_params)
+            response = outputs[0].outputs[0].text
+
+        else:
+            # Transformers
+            text_prompt = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+
+            inputs = self.tokenizer(text_prompt, return_tensors="pt").to(self.device)
+
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=300,  # Longer for batch verification
+                    temperature=0.1,
+                    top_p=0.9,
+                    do_sample=True,
+                    pad_token_id=self.tokenizer.eos_token_id
+                )
+
+            response = self.tokenizer.decode(
+                outputs[0][inputs['input_ids'].shape[1]:],
+                skip_special_tokens=True
+            )
+
+        # Parse response
+        verified_piis = parse_batch_verification_response(response, detected_piis, self.with_reasoning)
+        return verified_piis
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Qwen 2.5 PII Verifier")
+    parser = argparse.ArgumentParser(description="Run Qwen 2.5 PII Verifier with Batch Verification")
     parser.add_argument("--input", required=True, help="Input JSONL file")
     parser.add_argument("--output", required=True, help="Output JSONL file")
     parser.add_argument("--model-path", required=True, help="Path to Qwen model")
-    parser.add_argument("--batch-size", type=int, default=4, help="Batch size (smaller for LLMs)")
-    parser.add_argument("--use-4bit", action="store_true", help="Use 4-bit quantization")
-    parser.add_argument("--use-vllm", action="store_true", help="Use vLLM for faster inference")
+    parser.add_argument("--batch-size", type=int, default=4, help="Batch size (number of inputs to process together)")
+    parser.add_argument("--disable-quantization", action="store_true", help="Disable 4-bit quantization (use FP16 instead). Default: 4-bit enabled")
+    parser.add_argument("--use-vllm", action="store_true", help="Use vLLM for faster inference (forces FP16)")
+    parser.add_argument("--with-reasoning", action="store_true", help="Include detailed reasoning for each PII verification")
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cuda", help="Device")
 
     args = parser.parse_args()
@@ -300,8 +380,9 @@ def main():
     verifier = QwenVerifier(
         model_path=args.model_path,
         device=args.device,
-        use_4bit=args.use_4bit,
-        use_vllm=args.use_vllm
+        disable_quantization=args.disable_quantization,
+        use_vllm=args.use_vllm,
+        with_reasoning=args.with_reasoning
     )
 
     # Determine model name
@@ -315,76 +396,70 @@ def main():
         model_name = "qwen_2.5_3b"
         model_params = "3B"
 
-    if args.use_4bit:
+    if not args.disable_quantization and not args.use_vllm:
         model_name += "_4bit"
     if args.use_vllm:
         model_name += "_vllm"
+    if args.with_reasoning:
+        model_name += "_reasoning"
 
     logger.info(f"Processing {reader.count()} records")
-    logger.info(f"Batch size: {args.batch_size}")
+    logger.info(f"Using batch verification: each input analyzed for multiple PIIs")
 
     # Process records
     tracker.start()
 
     with JSONLWriter(args.output) as writer:
-        batch = []
-
         for record in reader.read():
-            batch.append(record)
+            # Extract data from 3-key format
+            record_id = record["recordId"]
+            input_text = record["input"]
+            detected_piis = record["PIIs"]
 
-            if len(batch) >= args.batch_size:
-                # Process batch
-                texts = [r["input"] for r in batch]
-                entity_types = [r.get("entityType", "UNKNOWN") for r in batch]
-                entity_values = [r.get("entityValue", "") for r in batch]
+            # Skip if no PIIs detected (nothing to verify)
+            if not detected_piis:
+                result = {
+                    "recordId": record_id,
+                    "input": input_text,
+                    "detected_piis": detected_piis,
+                    "verified_piis": [] if not args.with_reasoning else [],
+                    "latency_ms": 0.0,
+                    "model": model_name
+                }
+                writer.write(result)
+                continue
 
-                # Time batch inference
-                batch_start = time.time()
-                results = verifier.verify_batch(texts, entity_types, entity_values)
-                batch_time = (time.time() - batch_start) * 1000
-                per_item_latency = batch_time / len(batch)
+            # Time single inference
+            start = time.time()
+            verified_piis = verifier.verify_piis(input_text, detected_piis)
+            latency_ms = (time.time() - start) * 1000
 
-                # Write results
-                for record, (verified, confidence, reason) in zip(batch, results):
-                    result_record = create_result_record(
-                        input_record=record,
-                        verified=verified,
-                        confidence=confidence,
-                        reason=reason,
-                        latency_ms=per_item_latency,
-                        model_name=model_name,
-                        model_type="gpu",
-                        model_params=model_params
-                    )
-                    writer.write(result_record)
-                    tracker.record(per_item_latency, confidence, verified)
+            # Create result record
+            result = {
+                "recordId": record_id,
+                "input": input_text,
+                "detected_piis": detected_piis,
+                "verified_piis": verified_piis,
+                "latency_ms": round(latency_ms, 2),
+                "model": model_name
+            }
 
-                batch = []
+            writer.write(result)
 
-        # Process remaining items
-        if batch:
-            texts = [r["input"] for r in batch]
-            entity_types = [r.get("entityType", "UNKNOWN") for r in batch]
-            entity_values = [r.get("entityValue", "") for r in batch]
+            # Track performance metrics
+            if args.with_reasoning:
+                # Calculate metrics from reasoning mode (list of dicts)
+                verified_count = sum(1 for pii in verified_piis if pii.get("verified", False))
+                has_verified = verified_count > 0
+                # Use fixed confidence for tracking (confidence removed from output)
+                avg_confidence = 1.0 if has_verified else 0.0
+            else:
+                # Simple mode (list of strings)
+                verified_count = len(verified_piis)
+                has_verified = verified_count > 0
+                avg_confidence = 1.0 if has_verified else 0.0
 
-            batch_start = time.time()
-            results = verifier.verify_batch(texts, entity_types, entity_values)
-            batch_time = (time.time() - batch_start) * 1000
-            per_item_latency = batch_time / len(batch)
-
-            for record, (verified, confidence, reason) in zip(batch, results):
-                result_record = create_result_record(
-                    input_record=record,
-                    verified=verified,
-                    confidence=confidence,
-                    reason=reason,
-                    latency_ms=per_item_latency,
-                    model_name=model_name,
-                    model_type="gpu",
-                    model_params=model_params
-                )
-                writer.write(result_record)
-                tracker.record(per_item_latency, confidence, verified)
+            tracker.record(latency_ms, avg_confidence, has_verified)
 
     tracker.end()
     tracker.print_summary(model_name)

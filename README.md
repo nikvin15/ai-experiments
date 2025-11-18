@@ -1,68 +1,88 @@
 # PII Verifier Model Experiments
 
-Experiment framework for testing CPU and GPU-based PII verification models.
+Experiment framework for testing CPU and GPU-based PII verification models with **batch verification** approach.
+
+## Key Features
+
+- **4-bit Quantization by Default** - 65-75% memory reduction for GPU models
+- **Batch PII Verification** - LLMs filter false positives from CPU model detections
+- **Two Output Modes** - Simple (list) or reasoning (detailed explanations)
+- **Auto-Download Models** - Models download from HuggingFace automatically
+- **Comprehensive Training Data** - 484 records covering 121 data elements
 
 ## Directory Structure
 
 ```
 ai-experiments/
 ├── runners/              # Model runner scripts
+│   ├── run_llama.py            # GPU: Llama 3.2 (1B/3B) - 4-bit default
+│   ├── run_qwen.py             # GPU: Qwen 2.5 (0.5B/1.5B/3B) - 4-bit default
 │   ├── run_distilbert.py       # CPU: DistilBERT PII verification
 │   ├── run_gliner.py           # CPU: GLiNER financial entities
 │   ├── run_phibert.py          # CPU: PHI BERT medical entities
-│   ├── run_llama.py            # GPU: Llama 3.2 (1B/3B)
-│   ├── run_qwen.py             # GPU: Qwen 2.5 (0.5B/1.5B/3B)
-│   └── common.py               # Shared utilities
-├── data/                 # Input JSONL files
-│   ├── test_emails.jsonl
-│   ├── test_persons.jsonl
-│   ├── test_financial.jsonl
-│   └── test_medical.jsonl
+│   ├── common.py               # Shared utilities
+│   └── README.md               # Detailed runner documentation
+├── data/                 # Training and test JSONL files
+│   ├── training_all_elements.jsonl  # 484 records, 121 data elements
+│   ├── training_summary.md          # Dataset documentation
+│   └── README.md                    # Data format guide
 ├── results/              # Output JSONL files
-│   └── [timestamp]_[model]_results.jsonl
-├── models/               # Downloaded model weights
+│   └── [model]_results.jsonl
+├── models/               # Downloaded model weights (auto-created)
+├── MEMORY_GUIDE.md       # GPU memory requirements guide
 └── requirements.txt      # Python dependencies
 ```
 
-## Input Format
+## Input Format (Simplified 3-Key Format)
 
-Each line in input JSONL file should have:
+**GPU models (Llama/Qwen)** use the new simplified format:
 
 ```json
 {
-  "recordId": "unique-id-123",
-  "input": "Contact john@example.com for support",
-  "entityType": "EMAIL",
-  "entityValue": "john@example.com",
-  "metadata": {
-    "source": "presidio",
-    "confidence": 0.95
-  }
+  "recordId": "de_0001_01",
+  "input": "Patient SSN 123-45-6789 requires authorization",
+  "PIIs": ["Social Security Number"]
 }
 ```
 
+**Fields:**
+- `recordId` - Unique identifier
+- `input` - Text or JSON string to analyze
+- `PIIs` - Array of PII names detected by CPU models (empty for false positives)
+
+See [data/README.md](data/README.md) for the complete dataset documentation.
+
 ## Output Format
 
-Each line in output JSONL file will have:
+### Simple Mode (Default)
 
 ```json
 {
-  "recordId": "unique-id-123",
-  "input": "Contact john@example.com for support",
-  "entityType": "EMAIL",
-  "entityValue": "john@example.com",
-  "result": {
-    "verified": true,
-    "confidence": 0.92,
-    "reason": "Valid email format in contact context",
-    "latencyMs": 12.5
-  },
-  "model": {
-    "name": "distilbert_ai4privacy_v2",
-    "type": "cpu",
-    "parameters": "66M"
-  },
-  "timestamp": "2025-11-18T10:30:45.123Z"
+  "recordId": "de_0001_01",
+  "input": "Patient SSN 123-45-6789 requires authorization",
+  "detected_piis": ["Social Security Number"],
+  "verified_piis": ["Social Security Number"],
+  "latency_ms": 45.2,
+  "model": "llama_3.2_3b_4bit"
+}
+```
+
+### Reasoning Mode (--with-reasoning)
+
+```json
+{
+  "recordId": "de_0001_01",
+  "input": "Patient SSN 123-45-6789 requires authorization",
+  "detected_piis": ["Social Security Number"],
+  "verified_piis": [
+    {
+      "pii": "Social Security Number",
+      "verified": true,
+      "reason": "Valid SSN pattern used in medical context for patient authorization"
+    }
+  ],
+  "latency_ms": 52.8,
+  "model": "llama_3.2_3b_4bit_reasoning"
 }
 ```
 
@@ -147,82 +167,65 @@ python -c "from transformers import AutoModelForCausalLM, AutoTokenizer; \
   AutoTokenizer.from_pretrained('Qwen/Qwen2.5-3B-Instruct').save_pretrained('./models/qwen_2.5_3b')"
 ```
 
-## Running Experiments
+## Quick Start
 
-### CPU Models
+### Basic Usage (4-bit Default, Simple Mode)
 
-#### DistilBERT (General PII)
 ```bash
-python runners/run_distilbert.py \
-  --input data/test_emails.jsonl \
-  --output results/distilbert_results.jsonl \
-  --model-path models/distilbert_ai4privacy \
-  --batch-size 32
-
-# With ONNX optimization
-python runners/run_distilbert.py \
-  --input data/test_emails.jsonl \
-  --output results/distilbert_onnx_results.jsonl \
-  --model-path models/distilbert_ai4privacy \
-  --use-onnx \
-  --batch-size 32
-```
-
-#### GLiNER (Financial Entities)
-```bash
-python runners/run_gliner.py \
-  --input data/test_financial.jsonl \
-  --output results/gliner_results.jsonl \
-  --model-path models/gliner_base \
-  --batch-size 16
-```
-
-#### PHI BERT (Medical Entities)
-```bash
-python runners/run_phibert.py \
-  --input data/test_medical.jsonl \
-  --output results/phibert_results.jsonl \
-  --model-path models/phi_bert \
-  --batch-size 32
-```
-
-### GPU Models
-
-#### Llama 3.2 3B
-```bash
+# Llama 3.2 3B (2.5GB VRAM, 4-bit enabled by default)
 python runners/run_llama.py \
-  --input data/test_emails.jsonl \
+  --input data/training_all_elements.jsonl \
   --output results/llama_3b_results.jsonl \
-  --model-path models/llama_3.2_3b \
-  --batch-size 4 \
-  --use-4bit  # 4-bit quantization
+  --model-path meta-llama/Llama-3.2-3B-Instruct
 
-# With vLLM (faster)
-python runners/run_llama.py \
-  --input data/test_emails.jsonl \
-  --output results/llama_3b_vllm_results.jsonl \
-  --model-path models/llama_3.2_3b \
-  --use-vllm \
-  --batch-size 8
-```
-
-#### Qwen 2.5 3B
-```bash
+# Qwen 2.5 3B (2.3GB VRAM, 4-bit enabled by default)
 python runners/run_qwen.py \
-  --input data/test_emails.jsonl \
+  --input data/training_all_elements.jsonl \
   --output results/qwen_3b_results.jsonl \
-  --model-path models/qwen_2.5_3b \
-  --batch-size 4 \
-  --use-4bit
-
-# With vLLM (faster)
-python runners/run_qwen.py \
-  --input data/test_emails.jsonl \
-  --output results/qwen_3b_vllm_results.jsonl \
-  --model-path models/qwen_2.5_3b \
-  --use-vllm \
-  --batch-size 8
+  --model-path Qwen/Qwen2.5-3B-Instruct
 ```
+
+### With Reasoning (Detailed Explanations)
+
+```bash
+# Get detailed reasoning for each PII verification
+python runners/run_llama.py \
+  --input data/training_all_elements.jsonl \
+  --output results/llama_3b_reasoning.jsonl \
+  --model-path meta-llama/Llama-3.2-3B-Instruct \
+  --with-reasoning
+```
+
+### Advanced Options
+
+```bash
+# Disable 4-bit quantization (use FP16, requires 6.8GB VRAM)
+python runners/run_llama.py \
+  --input data/training_all_elements.jsonl \
+  --output results/llama_3b_fp16.jsonl \
+  --model-path meta-llama/Llama-3.2-3B-Instruct \
+  --disable-quantization
+
+# Use vLLM for faster inference (requires 7.5GB VRAM)
+python runners/run_qwen.py \
+  --input data/training_all_elements.jsonl \
+  --output results/qwen_3b_vllm.jsonl \
+  --model-path Qwen/Qwen2.5-3B-Instruct \
+  --use-vllm
+
+# Smaller models for low memory GPUs (4GB VRAM)
+python runners/run_qwen.py \
+  --input data/training_all_elements.jsonl \
+  --output results/qwen_0.5b.jsonl \
+  --model-path Qwen/Qwen2.5-0.5B-Instruct
+
+python runners/run_llama.py \
+  --input data/training_all_elements.jsonl \
+  --output results/llama_1b.jsonl \
+  --model-path meta-llama/Llama-3.2-1B-Instruct
+```
+
+**For detailed usage examples, see [runners/README.md](runners/README.md)**
 
 ## Analyzing Results
 
@@ -265,57 +268,83 @@ python generate_test_data.py \
   --type medical
 ```
 
-## Performance Targets
+## Memory Requirements
 
-Based on PRESIDIO_VERIFIER_ANALYSIS.md recommendations:
+**4-bit quantization is enabled by default** for optimal memory usage.
 
-| Model | Type | Memory | Latency (p95) | F1 Score | Cost/Month |
-|-------|------|--------|---------------|----------|------------|
-| DistilBERT | CPU | <100MB | 9.5ms | 0.97 | $80/month |
-| GLiNER | CPU | 200MB | 75ms | 0.98 | $85/month |
-| PHI BERT | CPU | 100MB | 25ms | 0.94 | $80/month |
-| Llama 3.2 3B | GPU | 2-3GB | 50-120ms | 0.89 | $95/month |
-| Qwen 2.5 3B | GPU | 1.5-2GB | 40-100ms | 0.87 | $95/month |
+| Model | FP16 Memory | 4-bit Memory (Default) | Memory Saved |
+|-------|-------------|------------------------|--------------|
+| Qwen 2.5 0.5B | 1.5GB | **0.5GB** | 67% |
+| Llama 3.2 1B | 2.5GB | **1.0GB** | 60% |
+| Qwen 2.5 1.5B | 3.5GB | **1.2GB** | 66% |
+| Qwen 2.5 3B | 6.5GB | **2.3GB** | 65% |
+| Llama 3.2 3B | 6.8GB | **2.5GB** | 63% |
+
+**See [MEMORY_GUIDE.md](MEMORY_GUIDE.md) for detailed memory calculations and GPU recommendations.**
 
 ## Troubleshooting
 
 ### CUDA Out of Memory
-```bash
-# Reduce batch size
---batch-size 1
 
-# Use 4-bit quantization
---use-4bit
+**Error:** `CUDA out of memory`
 
-# Use CPU for LLMs (slower)
---device cpu
-```
+**Solutions:**
+1. Use smaller model (0.5B or 1B instead of 3B)
+2. Ensure 4-bit quantization is enabled (it's default - don't use `--disable-quantization`)
+3. Check GPU memory: `nvidia-smi`
+4. Close other GPU processes
 
-### Slow CPU Inference
-```bash
-# Use ONNX optimization
---use-onnx
+### Slow Inference
 
-# Increase batch size
---batch-size 64
+**Issue:** Inference slower than expected
 
-# Use INT8 quantization
---quantize int8
-```
+**Solutions:**
+1. Verify GPU is being used:
+   ```bash
+   python -c "import torch; print(torch.cuda.is_available())"
+   ```
+2. Try vLLM if you have enough VRAM:
+   ```bash
+   python runners/run_qwen.py --use-vllm ...
+   ```
+3. Use FP16 instead of 4-bit (trades memory for speed):
+   ```bash
+   python runners/run_llama.py --disable-quantization ...
+   ```
 
-### Model Download Issues
+### HuggingFace Authentication
+
+**Error:** `Repository not found` for Llama models
+
+**Solution:**
 ```bash
 # Set HuggingFace token
 export HF_TOKEN=your_token_here
 
-# Use mirror
-export HF_ENDPOINT=https://hf-mirror.com
+# Accept Llama license at https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct
 ```
+
+### Model Download Issues
+
+**Issue:** Model download fails or takes too long
+
+**Solutions:**
+1. Check internet connection
+2. Download manually using HuggingFace CLI
+3. Use local model path after download
+
+## Documentation
+
+- **[MEMORY_GUIDE.md](MEMORY_GUIDE.md)** - Detailed GPU memory requirements and calculations
+- **[runners/README.md](runners/README.md)** - Comprehensive runner documentation and examples
+- **[data/README.md](data/README.md)** - Training data format and statistics
+- **[data/training_summary.md](data/training_summary.md)** - Dataset overview and usage
 
 ## Notes
 
-- **Recommended**: Start with CPU models (DistilBERT, GLiNER, PHI BERT) as they're faster and cheaper
-- **GPU Requirements**: NVIDIA GPU with >=8GB VRAM for LLMs
-- **Batch Processing**: Larger batches = better throughput but higher latency per item
-- **ONNX**: 3-10x speedup for CPU models, highly recommended
-- **vLLM**: 2-4x speedup for GPU LLMs, use when available
+- **4-bit quantization is enabled by default** - Saves 65-75% memory with minimal accuracy loss
+- **Batch verification** - LLMs verify multiple PIIs per input (not single-entity verification)
+- **Two output modes** - Simple (list of strings) or reasoning (detailed explanations)
+- **Auto-download** - Models download from HuggingFace automatically on first run
+- **GPU Requirements**: NVIDIA GPU with 4GB+ VRAM (8GB+ recommended for 3B models)
+- **vLLM**: 2-4x speedup but requires more memory (no quantization support)
