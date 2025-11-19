@@ -76,18 +76,29 @@ class Phi3Verifier:
         logger.info("Phi-3-mini model loaded successfully")
 
     def _ensure_model_downloaded(self):
-        """Download model if not present."""
+        """Download model if not present - use HuggingFace model name directly."""
+        # Check if path looks like a local path (has directory separators) or HF model name
+        path_str = str(self.model_path)
+        is_local_path = '/' in path_str or '\\' in path_str or self.model_path.exists()
+
+        if not is_local_path:
+            # User provided HF model name directly (e.g., "microsoft/Phi-3-mini-4k-instruct")
+            # Use it as-is, don't try to download and save locally
+            logger.info(f"Using HuggingFace model name: {self.model_path}")
+            logger.info("Model will be cached automatically by transformers library")
+            return
+
         if not self.model_path.exists() or not (self.model_path / "config.json").exists():
             logger.info(f"Model not found at {self.model_path}")
             logger.info(f"Downloading {self.MODEL_PHI3_MINI} from HuggingFace...")
             logger.info("This may take several minutes on first run...")
 
             try:
-                # Download model and tokenizer
+                # Download model and tokenizer with trust_remote_code
                 model = AutoModelForCausalLM.from_pretrained(
                     self.MODEL_PHI3_MINI,
                     torch_dtype=torch.float16,
-                    trust_remote_code=True  # Required for Phi-3
+                    trust_remote_code=True
                 )
                 tokenizer = AutoTokenizer.from_pretrained(
                     self.MODEL_PHI3_MINI,
