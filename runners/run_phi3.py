@@ -212,7 +212,8 @@ class Phi3Verifier:
                     temperature=0.1,
                     top_p=0.9,
                     do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id
+                    pad_token_id=self.tokenizer.eos_token_id,
+                    use_cache=False  # Workaround for Phi-3 cache compatibility issue
                 )
 
             response = self.tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
@@ -327,7 +328,8 @@ class Phi3Verifier:
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=eos_token_id,
                     stop_strings=stop_strings,
-                    tokenizer=self.tokenizer  # Required for stop_strings
+                    tokenizer=self.tokenizer,  # Required for stop_strings
+                    use_cache=False  # Workaround for Phi-3 cache compatibility issue
                 )
 
             response = self.tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
