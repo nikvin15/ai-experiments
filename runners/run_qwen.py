@@ -384,7 +384,8 @@ class QwenVerifier:
                     do_sample=True,
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=eos_token_id,
-                    stop_strings=stop_strings
+                    stop_strings=stop_strings,
+                    tokenizer=self.tokenizer  # Required for stop_strings
                 )
 
             response = self.tokenizer.decode(
