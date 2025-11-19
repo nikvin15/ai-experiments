@@ -312,43 +312,146 @@ def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str
     {{
       "pii": "Email Address",
       "verified": true,
-      "reason": "Valid email used for user contact in legitimate context"
+      "reason": "Email username contains personal name pattern indicating individual ownership"
     }},
     {{
       "pii": "Phone Number",
       "verified": false,
-      "reason": "1-800 number is a toll-free business line, not personal information"
+      "reason": "Toll-free prefix indicates organization-level contact, not personal phone"
     }}
   ]
 }}"""
+        response_instruction = "Respond ONLY in JSON format:"
     else:
-        output_format = """{{
-  "verified_piis": ["Email Address", "Social Security Number"]
-}}"""
+        output_format = """Email Address, Social Security Number
 
-    return f"""You are a PII verification assistant. CPU-based models have detected potential PIIs in the input below. Your task is to verify which ones are TRUE personal information and filter out FALSE POSITIVES.
+(List only the verified PII types, comma-separated. If NONE are verified, respond: NONE)"""
+        response_instruction = "Respond with comma-separated list:"
+
+    return f"""You are Layer 2 of a two-layer PII detection system:
+
+LAYER 1 (Detection): CPU-based models scan structured and unstructured text to identify potential PII elements
+LAYER 2 (Verification): YOU verify if detected elements are actually PERSONAL PII that identifies or relates to specific individuals
+
+Your role: Validate detections and filter out false positives
 
 Input: {{input_text}}
-
 Detected PIIs: {{detected_piis}}
 
-For each detected PII, determine if it's truly personal information:
+═══════════════════════════════════════════════════════════════════════════════
 
-**VERIFY as TRUE PII if:**
-- It's actual personal data in context (real SSN, email, phone, name, etc.)
-- It's used to identify or contact a specific individual
-- It appears in a context related to a person (employee, patient, customer, user)
+**CRITICAL: DEFAULT TO TRUE**
+When uncertain or ambiguous, ALWAYS verify as PII. Privacy compliance requires conservative approach - better to over-detect than miss personal data.
 
-**REJECT as FALSE POSITIVE only if:**
-- It's a company/organization name that looks like a person name (e.g., "John Smith School")
-- It's a toll-free business number (1-800, 1-888, etc.)
-- It's a generic system email (e.g., noreply@, support@, admin@)
-- It's a placeholder or example (e.g., "555-0123" in obvious example context)
-- It's a product name, ticket ID, or system identifier
+═══════════════════════════════════════════════════════════════════════════════
 
-**Default to TRUE:** When in doubt, verify as true PII. It's better to be cautious.
+**UNIVERSAL ANALYSIS FRAMEWORK:**
 
-Respond ONLY in JSON format:
+For EACH detected PII (regardless of type), apply THREE TESTS:
+
+1. OWNERSHIP TEST
+   Ask: Does this data belong to a PERSON or to an ORGANIZATION/SYSTEM?
+
+   Personal Ownership Indicators:
+   • Individual names (firstname, lastname, username with name patterns)
+   • Personal identifiers (user123, john_doe, alice.smith)
+   • Individual-specific values (one person's SSN, credit score, health record)
+   • Personal contact methods (direct email, personal phone, home address)
+   • User-level data (my account, user profile, patient record)
+
+   Organizational Ownership Indicators:
+   • Role/function terms (admin, support, system, info, help, sales, hr, service)
+   • Generic identifiers (system ID, ticket number, product code, internal ref)
+   • Business-wide contacts (toll-free numbers, company phone, department email)
+   • Shared resources (company address, office location, help desk)
+   • Generic prefixes (no-reply, auto-, system-, generic-, default-)
+
+2. SPECIFICITY TEST
+   Ask: Can this identify or relate to ONE SPECIFIC INDIVIDUAL?
+
+   Specific to Individual:
+   • Unique personal identifiers (SSN, passport, personal email with name)
+   • Individual records (patient ID with personal context, employee record)
+   • Direct personal contact (personal phone, home address, individual email)
+   • One person's history (credit history, criminal record, employment history)
+
+   NOT Specific to Individual:
+   • Multiple people (team email, department phone, shared account)
+   • Generic functions (support line, info email, help desk)
+   • Organization-level (company credit, business address, corporate number)
+   • System/technical (auto-generated IDs, system accounts, batch numbers)
+
+3. CONTEXT TEST
+   Ask: How is this data used in the input text?
+
+   Personal Context:
+   • Employee/patient/customer/user data fields
+   • Individual transactions or records
+   • Personal information forms
+   • User account details
+   • Individual authentication or identification
+
+   Organizational Context:
+   • Company/organization names
+   • Business contact information
+   • System configuration or settings
+   • Generic support or service contacts
+   • Product/service information
+   • Technical/system identifiers
+
+═══════════════════════════════════════════════════════════════════════════════
+
+**COMMON PATTERNS TO RECOGNIZE:**
+
+These patterns apply across ALL PII types (emails, phones, names, IDs, addresses, financial data, health data, etc.):
+
+VERIFY as Personal PII when you see:
+  ✓ Individual names in the value (john.doe@, patient_sarah, user_mike)
+  ✓ Personal identifiers (user123, patient456, customer789)
+  ✓ Individual-level context (employee data, patient record, user account)
+  ✓ Direct personal contact (home, mobile, personal, primary)
+  ✓ One person's information (individual SSN, personal credit score)
+
+REJECT as False Positive when you see:
+  ✗ Role/function terms (support@, admin, system-, help, info, service)
+  ✗ Generic/shared contacts (1-800 numbers, company address, office phone)
+  ✗ Organization names (followed by Inc, LLC, Corp, School, Hospital)
+  ✗ System identifiers (auto-, system-, internal-, ref-, ticket-)
+  ✗ Business-level data (company account, corporate ID, organization record)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+**VERIFICATION PROCESS:**
+
+For EACH detected PII:
+
+STEP 1: Understand the data type
+        What kind of PII is this? (contact info, identification, financial, health, etc.)
+
+STEP 2: Extract distinguishing features
+        What makes this personal vs organizational?
+        Look for names, role terms, personal identifiers, generic terms
+
+STEP 3: Apply OWNERSHIP test
+        Does this belong to ONE person or to organization/system?
+        Check for personal vs organizational indicators
+
+STEP 4: Apply SPECIFICITY test
+        Can this identify ONE specific individual?
+        Or does it point to groups/systems/functions?
+
+STEP 5: Apply CONTEXT test
+        How is this used in the input?
+        Personal data context vs organizational/system context?
+
+STEP 6: Make decision
+        • If 2+ tests indicate PERSONAL → VERIFY
+        • If 2+ tests indicate ORGANIZATIONAL → REJECT
+        • If UNCERTAIN or MIXED signals → VERIFY (default to true)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+{response_instruction}
 {output_format}
 
 Response:"""
@@ -412,16 +515,16 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
         - If with_reasoning=True: List of dicts with pii, verified, reason
     """
     try:
-        # Try to find JSON in response
-        start = response.find('{')
-        end = response.rfind('}') + 1
+        if with_reasoning:
+            # Reasoning mode: Expect JSON format
+            start = response.find('{')
+            end = response.rfind('}') + 1
 
-        if start >= 0 and end > start:
-            json_str = response[start:end]
-            result = json.loads(json_str)
+            if start >= 0 and end > start:
+                json_str = response[start:end]
+                result = json.loads(json_str)
 
-            if with_reasoning:
-                # Expecting: {"results": [{"pii": "...", "verified": true, ...}]}
+                # Expecting: {"results": [{"pii": "...", "verified": true, "reason": "..."}]}
                 if "results" in result and isinstance(result["results"], list):
                     return result["results"]
                 else:
@@ -436,19 +539,8 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
                         for pii in detected_piis
                     ]
             else:
-                # Expecting: {"verified_piis": ["Email Address", "SSN"]}
-                if "verified_piis" in result and isinstance(result["verified_piis"], list):
-                    return result["verified_piis"]
-                else:
-                    # Fallback: return all detected PIIs
-                    logger.warning("Unexpected simple format, using fallback")
-                    return detected_piis
-
-        else:
-            # No JSON found, use heuristic fallback
-            logger.warning("No JSON found in response, using fallback")
-            if with_reasoning:
-                # Return all as verified
+                # No JSON found
+                logger.warning("No JSON found in reasoning response, using fallback")
                 return [
                     {
                         "pii": pii,
@@ -457,13 +549,75 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
                     }
                     for pii in detected_piis
                 ]
-            else:
-                # Return all detected PIIs
-                return detected_piis
+
+        else:
+            # Simple mode: Expect comma-separated format
+            response_clean = response.strip()
+
+            # Check for explicit NONE response
+            if response_clean.upper() == "NONE" or response_clean.upper() == "NONE.":
+                logger.info("LLM returned NONE - no PIIs verified")
+                return []
+
+            # Try comma-separated parsing first (new format)
+            # Split by comma and clean each item
+            parts = [part.strip() for part in response_clean.split(',')]
+            parts = [part for part in parts if part and part.upper() != "NONE"]
+
+            if parts:
+                # Fuzzy match parsed PIIs against detected PIIs
+                verified = []
+                for parsed_pii in parts:
+                    parsed_lower = parsed_pii.lower()
+                    best_match = None
+
+                    # Try to find best match in detected PIIs
+                    for detected_pii in detected_piis:
+                        detected_lower = detected_pii.lower()
+
+                        # Exact match
+                        if parsed_lower == detected_lower:
+                            best_match = detected_pii
+                            break
+
+                        # Substring match (either direction)
+                        if parsed_lower in detected_lower or detected_lower in parsed_lower:
+                            best_match = detected_pii
+                            break
+
+                        # Partial word match (e.g., "Email" matches "Email Address")
+                        parsed_words = set(parsed_lower.split())
+                        detected_words = set(detected_lower.split())
+                        if parsed_words & detected_words:  # Intersection
+                            best_match = detected_pii
+
+                    if best_match and best_match not in verified:
+                        verified.append(best_match)
+                    elif not best_match:
+                        logger.warning(f"Could not match parsed PII '{parsed_pii}' to detected PIIs")
+
+                logger.info(f"Comma-separated parsing: {len(verified)} PIIs verified")
+                return verified
+
+            # Fallback: Try JSON format (backward compatibility)
+            start = response.find('{')
+            end = response.rfind('}') + 1
+
+            if start >= 0 and end > start:
+                json_str = response[start:end]
+                result = json.loads(json_str)
+
+                if "verified_piis" in result and isinstance(result["verified_piis"], list):
+                    logger.info("Fell back to JSON parsing successfully")
+                    return result["verified_piis"]
+
+            # Final fallback: return all detected PIIs (conservative)
+            logger.warning("Could not parse response, using conservative fallback (verify all)")
+            return detected_piis
 
     except json.JSONDecodeError as e:
         logger.error(f"JSON decode error in batch verification: {e}")
-        # Return fallback
+        # Conservative fallback
         if with_reasoning:
             return [
                 {
@@ -478,7 +632,7 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
 
     except Exception as e:
         logger.error(f"Error parsing batch verification response: {e}")
-        # Return fallback
+        # Conservative fallback
         if with_reasoning:
             return [
                 {

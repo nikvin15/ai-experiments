@@ -155,11 +155,20 @@ class LlamaVerifier:
                 dtype="float16"
             )
 
-            self.sampling_params = SamplingParams(
+            # Sampling params for simple mode (comma-separated output)
+            self.simple_sampling_params = SamplingParams(
                 temperature=0.1,
                 top_p=0.9,
-                max_tokens=200,
-                stop=["}", "\n\n"]
+                max_tokens=150,  # Shorter for comma-separated
+                stop=["\n\n", "\n", ",NONE"]  # Stop at newlines or NONE
+            )
+
+            # Sampling params for reasoning mode (JSON output)
+            self.reasoning_sampling_params = SamplingParams(
+                temperature=0.1,
+                top_p=0.9,
+                max_tokens=300,  # Longer for JSON with reasoning
+                stop=["}", "\n\n"]  # Stop at JSON closing brace
             )
 
             logger.info("vLLM model loaded")
@@ -277,19 +286,36 @@ class LlamaVerifier:
 
         # Generate response
         if self.use_vllm:
-            outputs = self.vllm_model.generate([prompt], self.sampling_params)
+            # Use appropriate sampling params based on mode
+            sampling_params = self.reasoning_sampling_params if self.with_reasoning else self.simple_sampling_params
+            outputs = self.vllm_model.generate([prompt], sampling_params)
             response = outputs[0].outputs[0].text
         else:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 
+            # Conditional stop tokens based on output format
+            if self.with_reasoning:
+                # JSON mode: stop at closing brace
+                eos_token_id = [self.tokenizer.eos_token_id,
+                               self.tokenizer.convert_tokens_to_ids("}")]
+                stop_strings = ["\n\n", "```"]
+                max_new_tokens = 300
+            else:
+                # Comma-separated mode: stop at newlines
+                eos_token_id = self.tokenizer.eos_token_id
+                stop_strings = ["\n\n", "\n"]
+                max_new_tokens = 150
+
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    max_new_tokens=300,  # Longer for batch verification
+                    max_new_tokens=max_new_tokens,
                     temperature=0.1,
                     top_p=0.9,
                     do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id
+                    pad_token_id=self.tokenizer.eos_token_id,
+                    eos_token_id=eos_token_id,
+                    stop_strings=stop_strings
                 )
 
             response = self.tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
