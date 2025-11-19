@@ -76,48 +76,38 @@ class GemmaVerifier:
         logger.info("Gemma-2-2B model loaded successfully")
 
     def _ensure_model_downloaded(self):
-        """Download model if not present - use HuggingFace model name directly."""
-        # Check if path looks like a local path (has directory separators) or HF model name
+        """
+        Check if model path is valid. For Gemma models with trust_remote_code,
+        always use HuggingFace model names directly - don't save locally.
+        """
+        # Check if this is a HuggingFace model name (format: org/model-name)
         path_str = str(self.model_path)
-        is_local_path = '/' in path_str or '\\' in path_str or self.model_path.exists()
 
-        if not is_local_path:
-            # User provided HF model name directly (e.g., "google/gemma-2-2b-it")
-            # Use it as-is, don't try to download and save locally
+        # HuggingFace model names: single slash with no path separators before/after
+        # Example: "google/gemma-2-2b-it"
+        is_hf_model_name = (
+            '/' in path_str and
+            not path_str.startswith('/') and
+            not path_str.startswith('./') and
+            not path_str.startswith('../') and
+            path_str.count('/') == 1  # Only one slash (org/model)
+        )
+
+        if is_hf_model_name:
+            # User provided HF model name directly
+            # Models with trust_remote_code MUST be loaded from HuggingFace
+            # (custom config files are not saved with save_pretrained)
             logger.info(f"Using HuggingFace model name: {self.model_path}")
-            logger.info("Model will be cached automatically by transformers library")
+            logger.info("Model will be cached automatically at ~/.cache/huggingface/hub/")
+            logger.info("Note: Gemma-2 requires trust_remote_code, always loaded from HuggingFace")
             return
 
-        if not self.model_path.exists() or not (self.model_path / "config.json").exists():
-            logger.info(f"Model not found at {self.model_path}")
-            logger.info(f"Downloading {self.MODEL_GEMMA_2B} from HuggingFace...")
-            logger.info("This may take several minutes on first run...")
-
-            try:
-                # Download model and tokenizer with trust_remote_code
-                model = AutoModelForCausalLM.from_pretrained(
-                    self.MODEL_GEMMA_2B,
-                    torch_dtype=torch.float16,
-                    trust_remote_code=True
-                )
-                tokenizer = AutoTokenizer.from_pretrained(
-                    self.MODEL_GEMMA_2B,
-                    trust_remote_code=True
-                )
-
-                # Save to specified path
-                self.model_path.mkdir(parents=True, exist_ok=True)
-                model.save_pretrained(self.model_path)
-                tokenizer.save_pretrained(self.model_path)
-
-                logger.info(f"Model downloaded and saved to {self.model_path}")
-            except Exception as e:
-                logger.error(f"Failed to download model: {e}")
-                logger.error("Please check:")
-                logger.error("1. Internet connection")
-                logger.error("2. HuggingFace token is set (export HF_TOKEN=your_token)")
-                logger.error("3. You have access to Gemma models")
-                raise
+        # Local path provided - warn user that Gemma can't be saved locally
+        if not self.model_path.exists():
+            logger.error(f"Local path does not exist: {self.model_path}")
+            logger.error("Gemma models require trust_remote_code and cannot be saved locally.")
+            logger.error(f"Please use HuggingFace model name instead: {self.MODEL_GEMMA_2B}")
+            raise ValueError(f"Invalid model path: {self.model_path}")
 
     def _load_transformers_model(self):
         """Load model using Transformers library."""
