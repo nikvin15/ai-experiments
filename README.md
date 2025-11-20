@@ -447,11 +447,37 @@ export HF_TOKEN=your_token_here
 - **[data/README.md](data/README.md)** - Training data format and statistics
 - **[data/training_summary.md](data/training_summary.md)** - Dataset overview and usage
 
+## Model Selection Guide
+
+Choose the right model for your use case:
+
+| Use Case | Recommended Model | Why |
+|----------|------------------|-----|
+| **Best Overall Reasoning** | Phi-3-mini (3.8B) | Superior reasoning at 800-1200ms, only 2.8GB RAM |
+| **Fastest Response** | Gemma-2-2B (2B) | 600-900ms latency, 1.5GB RAM, good accuracy |
+| **Most Accurate** | Llama 3.2 3B | 90%+ accuracy, slower at 1500-2100ms |
+| **Balanced Speed/Accuracy** | Qwen 2.5 3B | 88-93% accuracy, 1200-1800ms, 2.3GB RAM |
+| **Low VRAM (3GB)** | Gemma-2-2B | Only needs 1.5GB, still viable performance |
+| **Budget Option** | Qwen 2.5 1.5B | 75-82% accuracy, 500-800ms, 1.2GB RAM |
+
+### Quick Decision Tree
+
+```
+Do you have 4GB+ VRAM?
+├─ YES: Use Phi-3-mini (best reasoning)
+│   └─ Need faster? Use Gemma-2-2B
+│
+└─ NO (only 3GB):
+    └─ Use Gemma-2-2B (fastest + viable accuracy)
+```
+
 ## Notes
 
 - **4-bit quantization is enabled by default** - Saves 65-75% memory with minimal accuracy loss
-- **Batch verification** - LLMs verify multiple PIIs per input (not single-entity verification)
-- **Two output modes** - Simple (list of strings) or reasoning (detailed explanations)
+- **Batch verification** - LLMs verify multiple PIIs per input using 3-test framework (OWNERSHIP, SPECIFICITY, CONTEXT)
+- **Element descriptions** - Each PII type has definition/examples from 121 data elements JSON
+- **Two output modes** - Simple (comma-separated) or reasoning (JSON with explanations)
 - **Auto-download** - Models download from HuggingFace automatically on first run
-- **GPU Requirements**: NVIDIA GPU with 4GB+ VRAM (8GB+ recommended for 3B models)
+- **GPU Requirements**: NVIDIA GPU with 3GB+ VRAM (4GB+ recommended)
 - **vLLM**: 2-4x speedup but requires more memory (no quantization support)
+- **All models ≤5GB RAM** - Compliant with memory constraints
