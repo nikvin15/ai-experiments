@@ -198,11 +198,18 @@ python -c "from transformers import AutoModelForCausalLM, AutoTokenizer; \
 | **Llama 3.2 1B** | 1B | 2.5GB | **1.0GB** | 500-800ms | 70-78% | ⭐⭐ | Too small |
 | **Qwen 2.5 0.5B** | 0.5B | 1.5GB | **0.5GB** | 300-500ms | <70% | ❌ | Failed - too small |
 
+### Optional Models (>5GB RAM, requires 8GB+ VRAM)
+
+| Model | Parameters | FP16 RAM | 4-bit RAM | Latency | Accuracy | Status | Recommendation |
+|-------|------------|----------|-----------|---------|----------|--------|----------------|
+| **Llama 3.1 8B** | 8B | 16GB | **6.5GB** | 2000-3000ms | 92%+ | ⚠️ | **High accuracy, needs 8GB+ VRAM** |
+
+**Note**: Llama 3.1 8B offers superior accuracy but requires more VRAM. Only use if you have 8GB+ GPU memory.
+
 ### Models NOT Recommended (>5GB RAM after quantization)
 
 | Model | Parameters | FP16 RAM | 4-bit RAM | Why Not Recommended |
 |-------|------------|----------|-----------|---------------------|
-| Llama 3.1 8B | 8B | 16GB | **6.5GB** | Exceeds 5GB limit |
 | Mistral 7B | 7B | 14GB | **5.8GB** | Exceeds 5GB limit |
 | Qwen 2.5 7B | 7B | 14GB | **5.5GB** | Exceeds 5GB limit |
 | Gemma-2-9B | 9B | 18GB | **7.2GB** | Exceeds 5GB limit |
@@ -362,6 +369,63 @@ python3 runners/run_llama.py \
   --model-path meta-llama/Llama-3.2-3B-Instruct \
   --disable-quantization
 ```
+
+---
+
+### 3.1. Llama 3.1 8B - Highest Accuracy ⚠️ (Requires 8GB+ VRAM)
+
+**Model name format**: `llama_3.1_8b_4bit` | `llama_3.1_8b_4bit_reasoning` | `llama_3.1_8b_vllm` | `llama_3.1_8b_vllm_reasoning`
+
+**⚠️ Memory Requirements**: 6.5GB with 4-bit quantization, 16GB FP16. Only use if you have 8GB+ GPU memory.
+
+```bash
+# Default: 4-bit quantization, simple mode
+# Output model name: llama_3.1_8b_4bit
+# Memory: ~6.5GB
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.1_8b_4bit.jsonl \
+  --model-path meta-llama/Llama-3.1-8B-Instruct
+
+# 4-bit + reasoning mode (RECOMMENDED for highest accuracy)
+# Output model name: llama_3.1_8b_4bit_reasoning
+# Memory: ~6.5GB
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.1_8b_4bit_reasoning.jsonl \
+  --model-path meta-llama/Llama-3.1-8B-Instruct \
+  --with-reasoning
+
+# vLLM mode (no quantization, faster but needs 16GB)
+# Output model name: llama_3.1_8b_vllm
+# Memory: ~16GB
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.1_8b_vllm.jsonl \
+  --model-path meta-llama/Llama-3.1-8B-Instruct \
+  --use-vllm
+
+# vLLM + reasoning mode
+# Output model name: llama_3.1_8b_vllm_reasoning
+# Memory: ~16GB
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.1_8b_vllm_reasoning.jsonl \
+  --model-path meta-llama/Llama-3.1-8B-Instruct \
+  --use-vllm \
+  --with-reasoning
+
+# FP16 mode (no quantization, no vLLM - NOT RECOMMENDED)
+# Output model name: llama_3.1_8b
+# Memory: ~16GB
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.1_8b_fp16.jsonl \
+  --model-path meta-llama/Llama-3.1-8B-Instruct \
+  --disable-quantization
+```
+
+**Best Use Case**: When you have 8GB+ VRAM and need the highest accuracy possible. Use with 4-bit quantization and reasoning mode for optimal results.
 
 ---
 
@@ -536,7 +600,8 @@ python generate_test_data.py \
 | **3GB** | Gemma-2-2B (1.5GB), Qwen 1.5B (1.2GB) | Gemma-2-2B |
 | **4GB** | + Llama 3.2 3B (2.5GB), Qwen 3B (2.3GB) | Qwen 3B |
 | **6GB+** | + Phi-3-mini (2.8GB) | Phi-3-mini |
-| **8GB+** | All models + vLLM mode | Phi-3 + vLLM |
+| **8GB+** | + Llama 3.1 8B (6.5GB), all smaller models + vLLM | Llama 3.1 8B |
+| **12GB+** | All models + vLLM mode | Llama 3.1 8B + vLLM |
 
 ### Memory Usage Table
 
@@ -549,6 +614,7 @@ python generate_test_data.py \
 | Qwen 2.5 3B | 3B | 6.5GB | **2.3GB** | 65% | 4GB |
 | **Llama 3.2 3B** | 3B | 6.8GB | **2.5GB** | 63% | **4GB** |
 | **Phi-3-mini** | 3.8B | 7.6GB | **2.8GB** | 63% | **4GB** |
+| **Llama 3.1 8B** ⚠️ | 8B | 16GB | **6.5GB** | 59% | **8GB** |
 
 **See [MEMORY_GUIDE.md](MEMORY_GUIDE.md) for detailed memory calculations and optimization tips.**
 
@@ -622,6 +688,96 @@ python3 scripts/consolidate_results.py \
 - **N/A values** - Appears when a model didn't process a specific PII
 - **Automatic directory creation** - Creates `analysis/` directory if it doesn't exist
 
+## Comprehensive Benchmark - Run All Models
+
+A bash script to run ALL models with ALL variations automatically and generate consolidated CSV.
+
+### Quick Start
+
+```bash
+# Run all models with 4-bit + reasoning (recommended, takes ~30-60 minutes)
+bash scripts/run_all_models.sh
+
+# Run specific models only
+bash scripts/run_all_models.sh --models phi3,gemma,llama3b
+
+# Run with all variations (4-bit, reasoning, vLLM, FP16)
+bash scripts/run_all_models.sh --variations 4bit,reasoning,vllm,fp16
+
+# Run only Llama 8B with reasoning (if you have 8GB+ VRAM)
+bash scripts/run_all_models.sh --models llama8b --variations reasoning
+
+# Clean old results and run fresh
+bash scripts/run_all_models.sh --clean
+```
+
+### Available Options
+
+| Option | Description | Default | Example |
+|--------|-------------|---------|---------|
+| `--input FILE` | Input JSONL file | `data/test_sample.jsonl` | `--input data/custom.jsonl` |
+| `--models LIST` | Comma-separated model list | `phi3,gemma,llama3b,llama8b,qwen3b,qwen1.5b` | `--models phi3,gemma` |
+| `--variations LIST` | Comma-separated variations | `4bit,reasoning` | `--variations 4bit,vllm` |
+| `--skip-csv` | Skip CSV generation | false | `--skip-csv` |
+| `--clean` | Clean results before run | false | `--clean` |
+
+### Model Options
+
+- `phi3` - Phi-3-mini (3.8B) - Best reasoning
+- `gemma` - Gemma-2-2B - Fastest viable
+- `llama3b` - Llama 3.2 3B - Most accurate (≤5GB)
+- `llama8b` - Llama 3.1 8B - Highest accuracy (⚠️ needs 8GB+ VRAM)
+- `qwen3b` - Qwen 2.5 3B - Balanced
+- `qwen1.5b` - Qwen 2.5 1.5B - Budget option
+
+### Variation Options
+
+- `4bit` - 4-bit quantization, simple mode
+- `reasoning` - 4-bit quantization, reasoning mode (JSON output)
+- `vllm` - vLLM inference (faster, no quantization)
+- `fp16` - Full precision (no quantization, high memory)
+
+### Output
+
+The script will:
+1. Run each selected model with each selected variation
+2. Save results to `results/` directory
+3. Print success/failure summary
+4. **Automatically generate consolidated CSV** to `analysis/all_models_comparison_TIMESTAMP.csv`
+
+### Example Workflows
+
+**Minimal benchmark (fast, ~10 minutes)**:
+```bash
+# Only recommended models with 4-bit + reasoning
+bash scripts/run_all_models.sh --models phi3,gemma,llama3b --variations reasoning
+```
+
+**Full benchmark (comprehensive, ~1-2 hours)**:
+```bash
+# All models, all variations
+bash scripts/run_all_models.sh --variations 4bit,reasoning,vllm
+```
+
+**High-VRAM benchmark (8GB+ GPU)**:
+```bash
+# Include Llama 8B for highest accuracy
+bash scripts/run_all_models.sh --models phi3,gemma,llama3b,llama8b --variations reasoning
+```
+
+**Quick comparison (fastest)**:
+```bash
+# Just 4-bit reasoning mode for top 3 models
+bash scripts/run_all_models.sh --models phi3,gemma,qwen3b --variations reasoning
+```
+
+### CSV Output
+
+After completion, open the generated CSV in Excel/Google Sheets:
+- **File**: `analysis/all_models_comparison_YYYYMMDD_HHMMSS.csv`
+- **Columns**: Input Text | PII | Model1_Verified | Model1_Reason | Model2_Verified | Model2_Reason | ...
+- **Rows**: One row per PII per input text
+
 ## Troubleshooting
 
 ### CUDA Out of Memory
@@ -687,8 +843,9 @@ Choose the right model for your use case:
 | Use Case | Recommended Model | Why |
 |----------|------------------|-----|
 | **Best Overall Reasoning** | Phi-3-mini (3.8B) | Superior reasoning at 800-1200ms, only 2.8GB RAM |
+| **Highest Accuracy** | Llama 3.1 8B ⚠️ | 92%+ accuracy, best results, needs 8GB+ VRAM |
+| **Most Accurate (≤5GB)** | Llama 3.2 3B | 90%+ accuracy, 2.5GB RAM, slower at 1500-2100ms |
 | **Fastest Response** | Gemma-2-2B (2B) | 600-900ms latency, 1.5GB RAM, good accuracy |
-| **Most Accurate** | Llama 3.2 3B | 90%+ accuracy, slower at 1500-2100ms |
 | **Balanced Speed/Accuracy** | Qwen 2.5 3B | 88-93% accuracy, 1200-1800ms, 2.3GB RAM |
 | **Low VRAM (3GB)** | Gemma-2-2B | Only needs 1.5GB, still viable performance |
 | **Budget Option** | Qwen 2.5 1.5B | 75-82% accuracy, 500-800ms, 1.2GB RAM |
@@ -696,12 +853,16 @@ Choose the right model for your use case:
 ### Quick Decision Tree
 
 ```
-Do you have 4GB+ VRAM?
-├─ YES: Use Phi-3-mini (best reasoning)
-│   └─ Need faster? Use Gemma-2-2B
+Do you have 8GB+ VRAM?
+├─ YES: Use Llama 3.1 8B (highest accuracy: 92%+)
+│   └─ Need better speed? Use Phi-3-mini (best reasoning, faster)
 │
-└─ NO (only 3GB):
-    └─ Use Gemma-2-2B (fastest + viable accuracy)
+├─ Do you have 4GB+ VRAM?
+│   ├─ YES: Use Phi-3-mini (best reasoning)
+│   │   └─ Need faster? Use Gemma-2-2B
+│   │
+│   └─ NO (only 3GB):
+│       └─ Use Gemma-2-2B (fastest + viable accuracy)
 ```
 
 ## Notes

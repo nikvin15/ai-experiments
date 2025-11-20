@@ -13,6 +13,9 @@ Guide for GPU memory requirements when running Llama and Qwen models for PII ver
 | **Qwen 2.5 1.5B** | 1.5B | ~3.5 GB | ~1.2 GB | 66% | GTX 1660+ (6GB) |
 | **Qwen 2.5 3B** | 3B | ~6.5 GB | ~2.3 GB | 65% | RTX 3060 (8GB+) |
 | **Llama 3.2 3B** | 3B | ~6.8 GB | ~2.5 GB | 63% | RTX 3060 (8GB+) |
+| **Llama 3.1 8B** ⚠️ | 8B | ~16 GB | ~6.5 GB | 59% | RTX 3070+ (8GB+) |
+
+**Note**: Llama 3.1 8B requires 8GB+ VRAM and is optional for highest accuracy scenarios.
 
 ---
 
@@ -97,6 +100,22 @@ Memory (GB) = (Parameters × 0.5 bytes) + Overhead
 | **4-bit** | (3B × 0.5) + 0.5GB = 2.0GB | ~2.5 GB |
 
 **Use case:** Best accuracy for complex edge cases and false positive filtering
+
+---
+
+### Llama 3.1 8B Instruct ⚠️
+
+| Configuration | Calculation | VRAM Required |
+|--------------|-------------|---------------|
+| **FP16** | (8B × 2) + 1.0GB = 17GB | ~16 GB |
+| **4-bit** | (8B × 0.5) + 0.5GB = 4.5GB | ~6.5 GB |
+
+**Use case:** Highest accuracy PII verification when 8GB+ VRAM is available
+
+**Requirements:**
+- Minimum 8GB VRAM with 4-bit quantization
+- Recommended 12GB+ VRAM for optimal performance
+- FP16 mode requires 16GB+ VRAM (not recommended)
 
 ---
 

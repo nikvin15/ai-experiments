@@ -1,11 +1,13 @@
 """
-Gemma-2-2B PII Verifier Runner
+Gemma-2 PII Verifier Runner
 
-Runs Google Gemma-2-2B for PII verification using prompting.
-Model: google/gemma-2-2b-it
+Runs Google Gemma-2 (2B/9B) for PII verification using prompting.
+Models:
+  - google/gemma-2-2b-it (2B)
+  - google/gemma-2-9b-it (9B)
 
 Usage:
-    python run_gemma.py --input data/test.jsonl --output results/gemma_results.jsonl --model-path models/gemma_2b
+    python run_gemma.py --input data/test.jsonl --output results/gemma_results.jsonl --model-path google/gemma-2-9b-it
 """
 
 import argparse
@@ -23,9 +25,10 @@ from common import (
 
 
 class GemmaVerifier:
-    """Gemma-2-2B based PII verifier using prompting."""
+    """Gemma-2 (2B/9B) based PII verifier using prompting."""
 
-    MODEL_GEMMA_2B = "google/gemma-2-2b-it"
+    MODEL_2B = "google/gemma-2-2b-it"
+    MODEL_9B = "google/gemma-2-9b-it"
 
     def __init__(
         self,
@@ -379,9 +382,15 @@ def main():
         with_reasoning=args.with_reasoning
     )
 
-    # Determine model name
-    model_name = "gemma_2b"
-    model_params = "2B"
+    # Determine model name based on model path
+    model_path_str = str(args.model_path).lower()
+    if "9b" in model_path_str:
+        model_name = "gemma_2_9b"
+        model_params = "9B"
+    else:
+        # Default to 2B
+        model_name = "gemma_2b"
+        model_params = "2B"
 
     if not args.disable_quantization and not args.use_vllm:
         model_name += "_4bit"

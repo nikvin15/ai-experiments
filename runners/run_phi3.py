@@ -1,11 +1,13 @@
 """
-Phi-3-mini PII Verifier Runner
+Phi-3 PII Verifier Runner
 
-Runs Microsoft Phi-3-mini (3.8B) for PII verification using prompting.
-Model: microsoft/Phi-3-mini-4k-instruct
+Runs Microsoft Phi-3 (mini 3.8B / small 7B) for PII verification using prompting.
+Models:
+  - microsoft/Phi-3-mini-4k-instruct (3.8B)
+  - microsoft/Phi-3-small-8k-instruct (7B)
 
 Usage:
-    python run_phi3.py --input data/test.jsonl --output results/phi3_results.jsonl --model-path models/phi3_mini
+    python run_phi3.py --input data/test.jsonl --output results/phi3_results.jsonl --model-path microsoft/Phi-3-small-8k-instruct
 """
 
 import argparse
@@ -23,9 +25,10 @@ from common import (
 
 
 class Phi3Verifier:
-    """Phi-3-mini based PII verifier using prompting."""
+    """Phi-3 (mini/small) based PII verifier using prompting."""
 
-    MODEL_PHI3_MINI = "microsoft/Phi-3-mini-4k-instruct"
+    MODEL_MINI = "microsoft/Phi-3-mini-4k-instruct"
+    MODEL_SMALL = "microsoft/Phi-3-small-8k-instruct"
 
     def __init__(
         self,
@@ -381,9 +384,15 @@ def main():
         with_reasoning=args.with_reasoning
     )
 
-    # Determine model name
-    model_name = "phi3_mini"
-    model_params = "3.8B"
+    # Determine model name based on model path
+    model_path_str = str(args.model_path).lower()
+    if "small" in model_path_str or "7b" in model_path_str:
+        model_name = "phi3_small"
+        model_params = "7B"
+    else:
+        # Default to mini
+        model_name = "phi3_mini"
+        model_params = "3.8B"
 
     if not args.disable_quantization and not args.use_vllm:
         model_name += "_4bit"

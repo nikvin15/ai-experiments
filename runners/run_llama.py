@@ -1,11 +1,14 @@
 """
-Llama 3.2 PII Verifier Runner
+Llama 3.2/3.1 PII Verifier Runner
 
-Runs Llama 3.2 (1B/3B) for PII verification using prompting.
-Models: meta-llama/Llama-3.2-1B-Instruct or meta-llama/Llama-3.2-3B-Instruct
+Runs Llama 3.2 (1B/3B) or Llama 3.1 (8B) for PII verification using prompting.
+Models:
+  - meta-llama/Llama-3.2-1B-Instruct
+  - meta-llama/Llama-3.2-3B-Instruct
+  - meta-llama/Llama-3.1-8B-Instruct
 
 Usage:
-    python run_llama.py --input data/test.jsonl --output results/llama_results.jsonl --model-path models/llama_3.2_3b
+    python run_llama.py --input data/test.jsonl --output results/llama_results.jsonl --model-path meta-llama/Llama-3.1-8B-Instruct
 """
 
 import argparse
@@ -23,10 +26,11 @@ from common import (
 
 
 class LlamaVerifier:
-    """Llama 3.2 based PII verifier using prompting."""
+    """Llama 3.2/3.1 based PII verifier using prompting."""
 
     MODEL_1B = "meta-llama/Llama-3.2-1B-Instruct"
     MODEL_3B = "meta-llama/Llama-3.2-3B-Instruct"
+    MODEL_8B = "meta-llama/Llama-3.1-8B-Instruct"
 
     def __init__(
         self,
@@ -55,7 +59,7 @@ class LlamaVerifier:
         # 4-bit is DEFAULT unless disabled or using vLLM
         self.use_4bit = not disable_quantization and not use_vllm
 
-        logger.info(f"Loading Llama 3.2 model from {model_path}")
+        logger.info(f"Loading Llama model from {model_path}")
         logger.info(f"Device: {device}, 4-bit: {self.use_4bit}, vLLM: {use_vllm}, Reasoning: {with_reasoning}")
 
         if use_vllm and not disable_quantization:
@@ -368,11 +372,16 @@ def main():
         with_reasoning=args.with_reasoning
     )
 
-    # Determine model name
-    if "1B" in str(args.model_path) or "1b" in str(args.model_path):
+    # Determine model name based on model path
+    model_path_str = str(args.model_path).lower()
+    if "1b" in model_path_str:
         model_name = "llama_3.2_1b"
         model_params = "1B"
+    elif "8b" in model_path_str:
+        model_name = "llama_3.1_8b"
+        model_params = "8B"
     else:
+        # Default to 3B
         model_name = "llama_3.2_3b"
         model_params = "3B"
 
