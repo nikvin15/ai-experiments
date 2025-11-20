@@ -296,6 +296,62 @@ Respond in JSON format:
 Response:"""
 
 
+def load_data_element_descriptions() -> Dict[str, str]:
+    """
+    Load data element descriptions from default_data_elements.json.
+
+    Returns:
+        Dictionary mapping element names to descriptions
+    """
+    try:
+        current_dir = Path(__file__).parent.parent
+        json_path = current_dir / "default_data_elements.json"
+
+        if not json_path.exists():
+            logger.warning(f"default_data_elements.json not found at {json_path}")
+            return {}
+
+        with open(json_path, 'r') as f:
+            elements = json.load(f)
+
+        # Create mapping: element name -> description
+        descriptions = {}
+        for element in elements:
+            name = element.get("name", "")
+            description = element.get("description", "")
+            if name and description:
+                descriptions[name] = description
+
+        logger.info(f"Loaded {len(descriptions)} data element descriptions")
+        return descriptions
+
+    except Exception as e:
+        logger.error(f"Error loading data element descriptions: {e}")
+        return {}
+
+
+def format_element_descriptions(detected_piis: List[str], all_descriptions: Dict[str, str]) -> str:
+    """
+    Format element descriptions for detected PIIs.
+
+    Args:
+        detected_piis: List of detected PII names
+        all_descriptions: All available descriptions
+
+    Returns:
+        Formatted string with descriptions for detected PIIs
+    """
+    if not detected_piis:
+        return "No PIIs detected."
+
+    formatted = []
+    for pii in detected_piis:
+        description = all_descriptions.get(pii, "No description available.")
+        formatted.append(f"- **{pii}**: {description}")
+
+    return "\n".join(formatted)
+
+
 def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str:
     """
     Load prompt template for batch PII verification.
@@ -328,128 +384,48 @@ def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str
 (List only the verified PII types, comma-separated. If NONE are verified, respond: NONE)"""
         response_instruction = "Respond with comma-separated list:"
 
-    return f"""You are Layer 2 of a two-layer PII detection system:
+    return f"""You are a specialized PII Verification AI. A preliminary system has already flagged potential Personally Identifiable Information (PII) in some text. Your task is to analyze each flagged element and determine if it is genuine personal PII or a false positive.
 
-LAYER 1 (Detection): CPU-based models scan structured and unstructured text to identify potential PII elements
-LAYER 2 (Verification): YOU verify if detected elements are actually PERSONAL PII that identifies or relates to specific individuals
+Your primary goal is to protect privacy, so it is safer to be overcautious than to miss personal data.
 
-Your role: Validate detections and filter out false positives
+Here is the original text containing potential PII:
+<input_text>
+{{input_text}}
+</input_text>
 
-Input: {{input_text}}
-Detected PIIs: {{detected_piis}}
+Here are the specific strings that were flagged as potential PII:
+<detected_piis>
+{{detected_piis}}
+</detected_piis>
 
-═══════════════════════════════════════════════════════════════════════════════
+Here are descriptions of what each PII element type means:
+<element_descriptions>
+{{element_descriptions}}
+</element_descriptions>
 
-**CRITICAL: DEFAULT TO TRUE**
-When uncertain or ambiguous, ALWAYS verify as PII. Privacy compliance requires conservative approach - better to over-detect than miss personal data.
+For each detected element, you must apply these three tests. An element is Personal PII if it relates to a specific, identifiable person:
 
-═══════════════════════════════════════════════════════════════════════════════
+**OWNERSHIP Test**: Does this belong to a PERSON or an ORGANIZATION/SYSTEM?
+- Person: Data contains individual names, personal usernames, or is inherently tied to one person (e.g., a user's personal score, individual employee ID)
+- Organization/System: Data contains functional roles (support, admin), shared contacts, or system identifiers (ticket-id, ref_no)
 
-**UNIVERSAL ANALYSIS FRAMEWORK:**
+**SPECIFICITY Test**: Does this single out ONE SPECIFIC PERSON?
+- Specific: It's a unique personal identifier (personal email, individual employee ID in personal context) or private contact method (home address, personal mobile number)
+- Not Specific: It's a shared identifier (team alias, department phone) or belongs to a business entity (info@company.com, business address)
 
-For EACH detected PII (regardless of type), apply THREE TESTS:
+**CONTEXT Test**: How is the data USED in the text?
+- Personal Use: Appears in user profiles, customer records, employee files, or used to identify an individual
+- Organizational/System Use: Used as company name, generic business contact, system configuration value, or non-personal technical ID
 
-1. OWNERSHIP TEST
-   Ask: Does this data belong to a PERSON or to an ORGANIZATION/SYSTEM?
+For each element in the detected_piis list, you must:
 
-   Personal Ownership Indicators:
-   • Individual names (firstname, lastname, username with name patterns)
-   • Personal identifiers (user123, john_doe, alice.smith)
-   • Individual-specific values (one person's SSN, credit score, health record)
-   • Personal contact methods (direct email, personal phone, home address)
-   • User-level data (my account, user profile, patient record)
+1. **Apply all three tests** (Ownership, Specificity, Context) to evaluate the element
+2. **Provide reasoning** that explains your analysis based on the tests
+3. **Make a decision**: VERIFIED (it is personal PII) or REJECTED (it is a false positive)
 
-   Organizational Ownership Indicators:
-   • Role/function terms (admin, support, system, info, help, sales, hr, service)
-   • Generic identifiers (system ID, ticket number, product code, internal ref)
-   • Business-wide contacts (toll-free numbers, company phone, department email)
-   • Shared resources (company address, office location, help desk)
-   • Generic prefixes (no-reply, auto-, system-, generic-, default-)
+Important: If any test suggests the element could be personal PII, or if you're uncertain, choose VERIFIED to err on the side of privacy protection.
 
-2. SPECIFICITY TEST
-   Ask: Can this identify or relate to ONE SPECIFIC INDIVIDUAL?
-
-   Specific to Individual:
-   • Unique personal identifiers (SSN, passport, personal email with name)
-   • Individual records (patient ID with personal context, employee record)
-   • Direct personal contact (personal phone, home address, individual email)
-   • One person's history (credit history, criminal record, employment history)
-
-   NOT Specific to Individual:
-   • Multiple people (team email, department phone, shared account)
-   • Generic functions (support line, info email, help desk)
-   • Organization-level (company credit, business address, corporate number)
-   • System/technical (auto-generated IDs, system accounts, batch numbers)
-
-3. CONTEXT TEST
-   Ask: How is this data used in the input text?
-
-   Personal Context:
-   • Employee/patient/customer/user data fields
-   • Individual transactions or records
-   • Personal information forms
-   • User account details
-   • Individual authentication or identification
-
-   Organizational Context:
-   • Company/organization names
-   • Business contact information
-   • System configuration or settings
-   • Generic support or service contacts
-   • Product/service information
-   • Technical/system identifiers
-
-═══════════════════════════════════════════════════════════════════════════════
-
-**COMMON PATTERNS TO RECOGNIZE:**
-
-These patterns apply across ALL PII types (emails, phones, names, IDs, addresses, financial data, health data, etc.):
-
-VERIFY as Personal PII when you see:
-  ✓ Individual names in the value (john.doe@, patient_sarah, user_mike)
-  ✓ Personal identifiers (user123, patient456, customer789)
-  ✓ Individual-level context (employee data, patient record, user account)
-  ✓ Direct personal contact (home, mobile, personal, primary)
-  ✓ One person's information (individual SSN, personal credit score)
-
-REJECT as False Positive when you see:
-  ✗ Role/function terms (support@, admin, system-, help, info, service)
-  ✗ Generic/shared contacts (1-800 numbers, company address, office phone)
-  ✗ Organization names (followed by Inc, LLC, Corp, School, Hospital)
-  ✗ System identifiers (auto-, system-, internal-, ref-, ticket-)
-  ✗ Business-level data (company account, corporate ID, organization record)
-
-═══════════════════════════════════════════════════════════════════════════════
-
-**VERIFICATION PROCESS:**
-
-For EACH detected PII:
-
-STEP 1: Understand the data type
-        What kind of PII is this? (contact info, identification, financial, health, etc.)
-
-STEP 2: Extract distinguishing features
-        What makes this personal vs organizational?
-        Look for names, role terms, personal identifiers, generic terms
-
-STEP 3: Apply OWNERSHIP test
-        Does this belong to ONE person or to organization/system?
-        Check for personal vs organizational indicators
-
-STEP 4: Apply SPECIFICITY test
-        Can this identify ONE specific individual?
-        Or does it point to groups/systems/functions?
-
-STEP 5: Apply CONTEXT test
-        How is this used in the input?
-        Personal data context vs organizational/system context?
-
-STEP 6: Make decision
-        • If 2+ tests indicate PERSONAL → VERIFY
-        • If 2+ tests indicate ORGANIZATIONAL → REJECT
-        • If UNCERTAIN or MIXED signals → VERIFY (default to true)
-
-═══════════════════════════════════════════════════════════════════════════════
+Analyze each element thoroughly and remember that protecting privacy is the priority.
 
 {response_instruction}
 {output_format}

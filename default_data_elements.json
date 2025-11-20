@@ -1,0 +1,1381 @@
+[
+  {
+    "name": "Criminal Records History",
+    "category": "Background Check Details",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(?:criminal|crime)[^\\s/(;)#|,=!>]{0,10}(?:background|record|history|activity)"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive"
+    },
+    "description": "Details of an individual's past criminal activities or convictions. Eg: criminalHistory, crime_bg, crimRecord, userCrimeHistory, criminal_activity_flag."
+  },
+  {
+    "name": "Reference Checks",
+    "category": "Background Check Details",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(?:reference|verification)[^\\s/(;)#|,=!>]{0,10}check"
+    ],
+    "tags": {},
+    "description": "Information related to employment or personal reference verification, e.g., referenceCheckId, ref_verification_status, referenceCheckResult, refcheck_token, verificationcheck_flag."
+  },
+  {
+    "name": "Employment History",
+    "category": "Background Check Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*employment[^\\s/(;)#|,=!>]{0,10}(?:history|verification|check)"
+    ],
+    "tags": {},
+    "description": "Details of previous jobs, positions, or work tenure. e.g: emp_history, employmentCheck, employmentVerification, pastEmployment, jobHistory, prevEmp, empHist."
+  },
+  {
+    "name": "Compensation History",
+    "category": "Background Check Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(?:past|previous|latest)[^\\s/(;)#|,=!>]{0,10}(salary|compensation|ctc)|salary[^\\s/(;)#|,=!>]{0,10}history"
+    ],
+    "tags": {},
+    "description": "Records of prior salaries or compensation, e.g., pastSalary, previousCompensation, salaryHistory, latestCTC, or comp_hist, reflecting payment details from past employments."
+  },
+  {
+    "name": "Credit History",
+    "category": "Background Check Details",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*loan[^\\s/(;)#|,=!>]{0,10}history|credit[^\\s/(;)#|,=!>]{0,10}(?:score|record|slip|report|history|rate|worth|rank)|financial[^\\s/(;)#|,=!>]{0,10}condition|loan[^\\s/(;)#|,=!>]{0,10}taken"
+    ],
+    "tags": {},
+    "description": "Details of an individual's past borrowing and repayment, e.g., creditScore, loanHistory, credit_report, financialCondition, loanTaken, creditWorth, creditRank, creditRecord."
+  },
+  {
+    "name": "Address",
+    "category": "Contact Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(.*(?<!(ip|mac|email|server|logical|physical|port|public|private|inet[46]?|cc|bcc|to|data|internet|host|remote)[-_]?)address)|(?:home|house|billing|mailing|shipping|contact|delivery|office|person|policyholder|insurer|claimant)[^\\s/(;)#|,=!>]{0,10}(?:address|addr)|(?:pin|zip|postal|metro)[-_\\[<'. ]{0,2}code|(?:delivery|pickup)[^\\s/(;)#|,=!>]{0,10}(?:location|position)|house[^\\s/(;)#|,=!>]{0,2}(?:number|no)|address[-_.]{0,2}line]|(?:address)[-_.]{0,2}line[-_.]\\d"
+    ],
+    "tags": {},
+    "description": "Structured postal or physical address information used for mail delivery and physical location identification. e.g: addrLine1, homeAddr, shippingAddress, billing_addr, deliveryLocation, houseNo."
+  },
+  {
+    "name": "Email Address",
+    "category": "Contact Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(.*email)|(?:business|personal|work|contact)[^\\s/(;)#|,=!>]{0,10}email.*|.*email[^\\s/(;)#|,=!>]{0,10}(?:address|id)"
+    ],
+    "tags": {},
+    "description": "Personal email address for communication. Examples: email=john@example.com, user_email=jane.doe@company.org, contact_mail=test@gmail.com. Look for @ symbol with valid domain format. Critical: System emails (noreply@, support@, info@, admin@, system@, notifications@) are organizational, not personal data."
+  },
+  {
+    "name": "Phone Number",
+    "category": "Contact Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "((phone|mobile|cellphone)|(.*((phone|mobile|cellphone|contact)[^\\s/(;)#|,=!>]{0,2}(?:detail|details)|(?:mobile|phone|cellphone|contact)[^\\s/(;)#|,=!>]{0,10}(?:number|nbr|num|no)|(?:primary|secondary)[^\\s/(;)#|,=!>]{0,10}(phone|landline|telephone))))",
+      "(home|office|work|mobile)[^\\s/(;)#|,=!>]{0,2}phone"
+    ],
+    "tags": {},
+    "description": "Phone number of an individual. Examples: phone=+1-555-1234567, mobile_no=9876543210, contact=(555)123-4567, user_tel=555.1234. Look for 7-15 digit numbers with optional formatting (+, -, parentheses, spaces). Critical: Exclude toll-free (1-800, 1-888, 1-877), emergency services (911, 112, 999), shortcodes (< 7 digits), and fax numbers."
+  },
+  {
+    "name": "Emergency Contact Details",
+    "category": "Contact Data",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "emergency[^\\s/(;)#|,=!>]{0,5}contact[^\\s/(;)#|,=!>]{0,5}(?:number|no|nbr|phone|mobile|mob|landline|email|details|detail|relation)"
+    ],
+    "tags": {},
+    "description": "Details of a person to contact in emergencies, e.g., emergencyContactNumber, emergency_contact_email, emergContactMob, emergencyContactRelation, emergency-contact-detail."
+  },
+  {
+    "name": "Total Experience",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "(?:applicant|candidate|job[^\\s/(;)#|,=!>]*applicant)[^\\s/(;)#|,=!>]*(?:experience|experiences)"
+    ],
+    "tags": {},
+    "description": "Represents years or duration of work experience. e.g: totalExperience, candidateExperience, applicant_experience, jobApplicantExperience, total_exp, yrsExp, workYears."
+  },
+  {
+    "name": "Past Employers",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "(?:employee|employment|employee[^\\s/(;)#|,=!>]*work)[^\\s/(;)#|,=!>]*(?:history|experience|experiences)|past[^\\s/(;)#|,=!>]*(?:experience|experiences)|previous[^\\s/(;)#|,=!>]*employers|(?:candidate|applicant)[^\\s/(;)#|,=!>]*past[^\\s/(;)#|,=!>]*company"
+    ],
+    "tags": {},
+    "description": "Names or details of previous employers or work history. e.g: pastEmployer, prev_emp, workHistory, employmentExperience, candidatePastCompany, empWorkHistory, previousEmployers."
+  },
+  {
+    "name": "Past Roles or Positions",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "past[^\\s/(;)#|,=!>]{0,5}role|(?:previous|past)[^\\s/(;)#|,=!>]{0,5}job[^\\s/(;)#|,=!>]{0,5}title"
+    ],
+    "tags": {},
+    "description": "Details of previous job titles or roles held, e.g., pastRole=Manager, prevJobTitle=Engineer, pastPosition=Director, prevRole=Analyst, pastEmpRole=Consultant."
+  },
+  {
+    "name": "Past Salary Details",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "(?:past|previous)[^\\s/(;)#|,=!>]{0,5}salary|salary[^\\s/(;)#|,=!>]{0,5}history"
+    ],
+    "tags": {},
+    "description": "Records of prior earnings, e.g., pastSalary, prev_salary, salaryHistory, salary_hist, previousSalary, salaryHistory2022, prevSal, salaryDetailsPrev. "
+  },
+  {
+    "name": "Reason for leaving or change of job",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "reason[^\\s/(;)#|,=!>]{0,5}leaving|job[^\\s/(;)#|,=!>]{0,5}change[^\\s/(;)#|,=!>]{0,5}reason|employment[^\\s/(;)#|,=!>]{0,5}change[^\\s/(;)#|,=!>]{0,5}reason"
+    ],
+    "tags": {},
+    "description": "Details explaining why a person left or changed a job, e.g., reasonForLeaving, jobChangeReason, employmentChangeReason, leftJobReason, or reason-leaving."
+  },
+  {
+    "name": "Past Dates of Employment",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "job[^\\s/(;)#|,=!>]{0,5}(?:from|to)[^\\s/(;)#|,=!>]{0,5}date|employment[^\\s/(;)#|,=!>]{0,5}date|employment[^\\s/(;)#|,=!>]{0,5}date[^\\s/(;)#|,=!>]{0,5}(?:start|end)|(?:start|end)[^\\s/(;)#|,=!>]{0,5}employment[^\\s/(;)#|,=!>]{0,5}date"
+    ],
+    "tags": {},
+    "description": "Represents start/end dates of previous jobs, e.g., jobStartDate, employmentToDate, emp_end_dt, startEmploymentDate, jobfromdate, pastEmpStart, prev_job_end."
+  },
+  {
+    "name": "Proof of Last Salary",
+    "category": "Professional & Employment Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "((?:last|previous|latest)[^\\s/(;)#|,=!>]{0,5}){0,1}salary[^\\s/(;)#|,=!>]{0,5}slip"
+    ],
+    "tags": {},
+    "description": "Proof of last salary such as salaryslip, lastsalaryslip, prevsalaryslip, latestsalaryslip; used to verify employment income, last_slip, prevSalSlip, or ltsalaryslip."
+  },
+  {
+    "name": "Vehicle Registration Number",
+    "category": "Vehicle Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*((?:vehicle|truck|motorcycle|tractor)[^\\s/(;)#|,=!>]{0,5}registration([^\\s/(;)#|,=!>]{0,5}(details|number|num|nbr|no)){0,1}|(?:car)[-_.]{0,3}registration[^\\s/(;)#|,=!>]{0,5}(details|number|num|nbr|no)).*"
+    ],
+    "tags": {},
+    "description": "Unique identifier assigned to a vehicle, e.g., vehicleRegNo, car_registration_num, truckRegNumber, motorcycleRegNbr, tractor_registration_no, often used for tracking or authentication purposes."
+  },
+  {
+    "name": "License Plate",
+    "category": "Vehicle Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(license[^\\s/(;)#|,=!>]{0,5}plate([^\\s/(;)#|,=!>]{0,5}(details|number|num|nbr|no)){0,1}).*"
+    ],
+    "tags": {},
+    "description": "Vehicle license plate identifier. e.g: licensePlate, license_plate_num, licPlateNumber, license-plate-no, l_plate_num, vehicle_license_plate, licPlateNbr."
+  },
+  {
+    "name": "Video",
+    "category": "Audio, Visual & Sensory Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(?:cctv|webcam|video|camera)[^\\s/(;)#|,=!>]{0,5}(?:feed|clip|recording|footage)"
+    ],
+    "tags": {},
+    "description": "Represents visual recordings or media, e.g., videoClip, cctvFootage, cameraFeed, webcamRecording, vid_rec, cam_footage, videoStream, cctvClip, camVid, webcamFeed."
+  },
+  {
+    "name": "Audio Recordings",
+    "category": "Audio, Visual & Sensory Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(?:audio|microphone|phone|call)[^\\s/(;)#|,=!>]{0,5}(?:feed|clip|recording|record)[^\\s/(;)#|,=!>]{0,2}"
+    ],
+    "tags": {},
+    "description": "Voice or audio content files created by users. Examples: voice_message=audio_123.mp3, voice_recording=blob:abc123, audio_note=base64_encoded_audio. Look for actual audio file references, blob IDs, or encoded audio data. Critical: audio_codec, audio_bitrate, volume_level, audio_quality are technical settings about audio, NOT actual recordings."
+  },
+  {
+    "name": "IoT or Sensor Data",
+    "category": "Audio, Visual & Sensory Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "thermocouples|thermistor|thermometer|(?:thermal|temperature|radiation|light|proximity|gyroscope|pressure|position)[^\\s/(;)#|,=!>]{0,10}(?:sensors|sensor)|(?:sensors|sensor)[^\\s/(;)#|,=!>]{0,10}(?:thermal|temperature|radiation|light|proximity|gyroscope|pressure|position)|accelerometer"
+    ],
+    "tags": {},
+    "description": "Data from user's personal IoT devices or wearables. Examples: fitness_tracker={steps:10000,heartrate:72}, smart_home={temperature:72,lights:on}, wearable_data=health_metrics_123. Look for readings from devices owned/used by specific users. Critical: device_specs, sensor_calibration, device_capabilities are technical properties, NOT user's actual sensor readings."
+  },
+  {
+    "name": "Purchase History",
+    "category": "Purchase Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "purchase[^\\s/(;)#|,=!>]{0,5}(?:history|(?<!site|val)id)|past[^\\s/(;)#|,=!>]{0,5}(?:purchases|purchase)|previous[^\\s/(;)#|,=!>]{0,5}purchase"
+    ],
+    "tags": {},
+    "description": "Collection of user's past transactions over time. Examples: purchase_history=[{date:2024-01,order:123},{date:2024-02,order:456}], order_history=user_transactions_all, past_purchases=historical_orders. Look for arrays/lists showing multiple past orders. Critical: Single current transaction is Order Details, NOT Purchase History - this is specifically about multiple past transactions."
+  },
+  {
+    "name": "Product Return History",
+    "category": "Purchase Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "return[^\\s/(;)#|,=!>]{0,5}(?:history|product)|cancel[^\\s/(;)#|,=!>]{0,5}(?:order|purchase)|exchange[^\\s/(;)#|,=!>]{0,5}product"
+    ],
+    "tags": {},
+    "description": "Tracks details of returned, cancelled, or exchanged products/orders, e.g. returnHistory, cancelOrder, exchangeProd, retProdHist, cancel_purchase, exchngPrdct."
+  },
+  {
+    "name": "Order Details",
+    "category": "Purchase Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*((order|shipping|billing|invoice|total[-_]?(subscription|charge|charged))[^\\s/(;)#|,=!>]{0,5}(number|code|num|no|id|amount))"
+    ],
+    "tags": {},
+    "description": "Information about specific purchase transaction. Examples: order_id=ORD-2024-123456, purchase_details={items:[shirt,pants],total:89.99}, transaction_info=checkout_abc. Look for specific order IDs, purchase items, transaction amounts. Critical: sort_order, display_order, z_order, tab_order control UI element positioning, NOT purchase transactions."
+  },
+  {
+    "name": "Offer Details",
+    "category": "Purchase Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(?:product|special)[^\\s/(;)#|,=!>]{0,5}offer|offer[^\\s/(;)#|,=!>]{0,5}(?:details|detail|applied|card|code|id|number)|coupon|cashback|product[^\\s/(;)#|,=!>]{0,5}discount|reward[^\\s/(;)#|,=!>]{0,5}(?:points|point).*"
+    ],
+    "tags": {},
+    "description": "Details about discounts, offers, coupons, cashback, or rewards applied to a purchase. e.g: specialOfferCode, appliedCoupon, cashbackID, rewardPoints, productDiscount, offerDetail, couponCode."
+  },
+  {
+    "name": "Social Media Account",
+    "category": "Social Media Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(?:facebook|instagram|linkedin|twitter|youtube|whatsapp|reddit|snapchat|pinterest|medium|behance|dribble)[^\\s/(;)#|,=!>]*(?:account|profile)"
+    ],
+    "tags": {},
+    "description": "User's profile identifier on social platforms. Examples: facebook_profile=fb.user.123456, twitter_account=@johndoe, instagram_id=user_jane. Look for actual social media profile references or handles. Critical: social_share_button, facebook_widget, twitter_api are platform integrations, NOT user's personal social accounts."
+  },
+  {
+    "name": "Social Media Activity",
+    "category": "Social Media Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(?:facebook|instagram|linkedin|twitter|youtube|whatsapp|reddit|snapchat|pinterest|medium|behance|dribble)[^\\s/(;)#|,=!>]*(?:likes|comments|shares)|reddit[^\\s/(;)#|,=!>]*(?:upvote|downvote)|pinterest[^\\s/(;)#|,=!>]*pin|twitter[^\\s/(;)#|,=!>]*tweet"
+    ],
+    "tags": {},
+    "description": "Tracks user actions on social platforms, e.g., fb_likes, insta_comments, twitter_tweet, reddit_upvote, pinterest_pin, yt_shares, sm_activity, social_evt, or user_action"
+  },
+  {
+    "name": "Social Media Contact",
+    "category": "Social Media Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "social[^\\s/(;)#|,=!>]{0,10}account"
+    ],
+    "tags": {},
+    "description": "Refers to any handle, ID, or link identifying a user's social profile, e.g. socialAccount, social_id, socialUser, socialProfile, socAccnt, socialUserName, socialProfileUrl."
+  },
+  {
+    "name": "Iris Recognition",
+    "category": "Biometric Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      "iris[^\\s/(;)#|,=!>]*(?:recognition|feature|scan)"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Unique biometric identifier from iris scan, e.g. irisRecognition, irisScanID, iris_feature_code, irisScanToken, irisRecogHash; used for user authentication or identification."
+  },
+  {
+    "name": "Facial Recognition",
+    "category": "Biometric Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      "(?:facial)[^\\s/(;)#|,=!>]{0,3}(?:recognition|hair|happy|angry|agree|talk|crazy|talk[^\\s/(;)#|,=!>]{0,3}angry|sad|neutral|shock|rolleye|think|shake|asleep|drunk|serious|landmark|mark|detection)"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Biometric facial measurements used for identity verification. Examples: face_embedding=[0.123,0.456,...], facial_biometric_id=face_auth_789, face_vector=biometric_template. Look for facial feature vectors, embeddings, or biometric templates. Critical: Regular photos, selfies, profile_picture, face_filter are images, NOT biometric identification data."
+  },
+  {
+    "name": "Voice Recognition",
+    "category": "Biometric Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      "(voice|speech)[^\\s/(;)#|,=!>]{0,5}(?:recognition|recog)"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Voice biometric patterns for identity verification. Examples: voice_print=biometric_hash_789, voiceprint_id=voice_auth_123, voice_signature=audio_pattern_456. Look for voice biometric templates or voiceprints used for authentication. Critical: voice_command, speech_to_text, voice_input are interaction methods, NOT biometric identification."
+  },
+  {
+    "name": "Handwriting Recognition",
+    "category": "Biometric Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      "handwriting[^\\s/(;)#|,=!>]*recognition|handwritten[^\\s/(;)#|,=!>]*text[^\\s/(;)#|,=!>]*recognition"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Data capturing or processing handwriting for identification or analysis. e.g: handwritingRecognition, handwrittenTextRecognition, handwriting_text_recog, hwr_recog."
+  },
+  {
+    "name": "DNA Matching",
+    "category": "Biometric Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      "dna(?!me)[^\\s/(;)#|,=!>]{0,10}(?:subsequence|scan|print|sequence)|prote[^\\s/(;)#|,=!>]{0,10}insequence"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Represents DNA profile or genetic sequence info, e.g., dnaMatch, dnaSeqResult, proteSeqID, dnaScanID, dna_sequence, proteinsequence, often used for biometric identification or ancestry matching."
+  },
+  {
+    "name": "Gait",
+    "category": "Biometric Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      "(?:abnormal|hemiplegic|diplegic|neuropathic|myopathic|choreiform|ataxic|parkinsonian|sensory)[^\\s/(;)#|,=!>]{0,3}gait|(?:forefoot|midfoot|rarefoot|heel|fore[^\\s/(;)#|,=!>]{0,3}foot|mid[^\\s/(;)#|,=!>]{0,3}foot|rare[^\\s/(;)#|,=!>]{0,3}foot)[^\\s/(;)#|,=!>]{0,3}strike|(?:foot|hip)[^\\s/(;)#|,=!>]{0,3}angle|foot[^\\s/(;)#|,=!>]{0,2}progression[^\\s/(;)#|,=!>]{0,3}angle|stride[^\\s/(;)#|,=!>]{0,3}(?:length|width|duration)|(?:lateral|forward)[^\\s/(;)#|,=!>]{0,3}stride"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Describes unique walking patterns or movements, e.g., abnormalGait, strideLength, footAngle, heelStrike, lateralStride, midfootStrike, footProgressionAngle."
+  },
+  {
+    "name": "Video Recordings",
+    "category": "Workplace Monitoring Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*((?:video|screen)[^\\s/(;)#|,=!>]{0,10}recording).*"
+    ],
+    "tags": {},
+    "description": "Captures visual content or screen activity as video, videoRecording, screenRecording, vidRec, or screenRec"
+  },
+  {
+    "name": "Website Filtering",
+    "category": "Workplace Monitoring Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*((?:website|domain)[^\\s/(;)#|,=!>]{0,3}blocked|(?:whitelisted|blacklisted)[^\\s/(;)#|,=!>]{0,3}site).*"
+    ],
+    "tags": {},
+    "description": "Tracks access to allowed or blocked websites/domains, e.g., websiteBlocked, domainWhitelisted, blacklistedSite, whitelistedDomain, blockedWebsite, siteBlocked, domainBlacklisted, whitelisted_site."
+  },
+  {
+    "name": "Building Information System Access",
+    "category": "Workplace Monitoring Data",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(access[^\\s/(;)#|,=!>]{0,10}card[^\\s/(;)#|,=!>]{0,10}number|access[^\\s/(;)#|,=!>]{0,10}card|employee[^\\s/(;)#|,=!>]{0,10}check[^\\s/(;)#|,=!>]{0,10}(?:out|in)|punch[^\\s/(;)#|,=!>]{0,10}card[^\\s/(;)#|,=!>]{0,10}time|punch[^\\s/(;)#|,=!>]{0,10}card).*"
+    ],
+    "tags": {},
+    "description": "Tracks entry/exit or access events to workplace buildings, e.g., accessCardNum, empCheckIn, punchCardTime, badgeID, accessEntry, empCheckOut, acsCrd, punchIn, acsEntry, badgeIn, cardNo."
+  },
+  {
+    "name": "Application Usage",
+    "category": "Workplace Monitoring Data",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(app[^\\s/(;)#|,=!>]{0,3}(usage|stats|statistics)).*"
+    ],
+    "tags": {},
+    "description": "User's app interaction patterns and time spent. Examples: app_usage_time=3h45m, feature_usage=[login:5,search:12,purchase:2], daily_active_time=125min. Look for time spent, feature interactions, or usage frequency tied to specific user. Critical: app_version, app_build, app_config are application metadata, NOT user's usage patterns."
+  },
+  {
+    "name": "Parents Name",
+    "category": "Spouse/Family & Dependent Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(?:guardian|mother|father)[^\\s/(;)#|,=!>]{0,8}name|name[^\\s/(;)#|,=!>]{0,8}(?:guardian|mother|father).*"
+    ],
+    "tags": {},
+    "description": "Parent or guardian's name, e.g., guardianName, mother_name, fatherName, nameOfFather, name-mother, mthr_name. Identifies a user's familial or dependent relationship."
+  },
+  {
+    "name": "Parents Contact Details",
+    "category": "Spouse/Family & Dependent Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*((?:guardian|mother|father)[^\\s/(;)#|,=!>]{0,10}(?:contact|number|nbr|phone|mobile|landline|email|address|addr)).*"
+    ],
+    "tags": {},
+    "description": "Parent or guardian's contact info such as phone, mobile, or email. Eg: father_contact, motherPhoneNbr, guardianEmail, father_mobile, mother_addr, guardianLandline."
+  },
+  {
+    "name": "Spouse Name",
+    "category": "Spouse/Family & Dependent Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(?:fiance|spouse|husband|wife)[^\\s/(;)#|,=!>]{0,8}name.*"
+    ],
+    "tags": {},
+    "description": "Name of an individual's spouse or partner. e.g: spouseName, wife_name, husbandNm, fianceName, spousename1, partnerName, spouseFullName."
+  },
+  {
+    "name": "Spouse Contact Details",
+    "category": "Spouse/Family & Dependent Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(?:fiance|spouse|husband|wife)[^\\s/(;)#|,=!>]{0,4}(?:contact|number|nbr|phone|mobile|mob|landline|email|address|addr).*"
+    ],
+    "tags": {},
+    "description": "Spouses contact info such as phone, mobile, or email. e.g: spouse_phone, wifeEmail, husbandMob, fianceContact, spouse_addr, spouseMobileNbr, wifeContactNumber."
+  },
+  {
+    "name": "Dependent Name",
+    "category": "Spouse/Family & Dependent Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(?:dependant|dependent|daughter|children|wife|husband|fiance|grand[^\\s/(;)#|,=!>]{0,8}mother|grand[^\\s/(;)#|,=!>]{0,8}father)[^\\s/(;)#|,=!>]{0,8}name.*"
+    ],
+    "tags": {},
+    "description": "Name of a family member or dependent, e.g., dependentName, daughter_name, spouseName, childFullName, wifeName, grandfatherName, dependant."
+  },
+  {
+    "name": "Dependent Contact Details",
+    "category": "Spouse/Family & Dependent Details",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(?:dependant|dependent|daughter|children|wife|fiance|grand[^\\s/(;)#|,=!>]{0,10}mother|grand[^\\s/(;)#|,=!>]{0,10}father|family)[^\\s/(;)#|,=!>]{0,5}(?:contact|number|nbr|phone|mobile|landline|email|address|addr).*"
+    ],
+    "tags": {},
+    "description": "Contact info for spouse or dependents, e.g., dependent_phone, familyEmail, daughter_mobile, wife_address, childrenNbr, grandparentContact, fiance_email, or dependentAddr."
+  },
+  {
+    "name": "Bank Account Details",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*((?<!question)bank[^\\s/(;)#|,=!>]*(?:account|details|detail|(swift|bic)-code|(swift|bic)_code)[^\\s/(;)#|,=!>]*(number|code)?|bank[^\\s/(;)#|,=!>]*account[^\\s/(;)#|,=!>]*details|(swift|bic)[-_]code|(swift|bic)code)"
+    ],
+    "tags": {},
+    "description": "Actual financial account numbers used for banking. Examples: account_number=1234567890123456, iban=DE89370400440532013000, routing_and_account=123456789-987654321. Look for 8-20 digit account numbers, IBAN format, or masked accounts (****1234). Critical: Bank name alone (Chase, Wells Fargo) is just the institution - need actual account numbers to be personal data."
+  },
+  {
+    "name": "Card Issuer",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*((?:credit|debit)[^\\s/(;)#|,=!>]{0,10}card[^\\s/(;)#|,=!>]{0,10}issuer|card[^\\s/(;)#|,=!>]{0,10}issuer)"
+    ],
+    "tags": {
+      "PCI": "PCI"
+    },
+    "description": "Identifies the bank or company issuing a card, e.g., cardIssuer=Chase, creditCardIssuer=HSBC, debitCardIssuer=AMEX, issuer=Visa, card_issuer=BOA."
+  },
+  {
+    "name": "Card Number",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(?![A-Z_]+)(?i).*((?:credit|debit)[^\\s/(;)#|,=!>]{0,10}card[^\\s/(;)#|,=!>]{0,10}(number|no|num|nbr)|(?:credit|debit)[^\\s/(;)#|,=!>]{0,10}card)|cc[-_]{0,1}(number|num|nbr|no)"
+    ],
+    "tags": {
+      "PCI": "PCI"
+    },
+    "description": "Card Number identifies payment cards, e.g., creditCardNumber, debit_card_no, cc_num, cardnbr, cc-number, or creditcard "
+  },
+  {
+    "name": "VPA Address",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(virtual[^\\s/(;)#|,=!>]{0,5}payment[^\\s/(;)#|,=!>]{0,5}address|virtual[^\\s/(;)#|,=!>]{0,5}payment|upi[-_<'.]{0,2}id)|(merchant|payee|payment|retailer|dealer|seller|vendor)[-_]{0,1}vpa|vpa[-_]{0,1}id"
+    ],
+    "tags": {},
+    "description": "Virtual Payment Address (VPA) identifies a user's UPI account; appears as upi_id, vpa, virtualpaymentaddress, payee_vpa, merchant-vpa, or payment_vpa"
+  },
+  {
+    "name": "Payment Nonce",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(.*)(payment[s]?)(nonce)(.*)"
+    ],
+    "tags": {
+      "PCI": "PCI"
+    },
+    "description": "Unique, single-use token for processing payments, e.g., paymentNonce, pay_nonce, payments-nonce, paytoken, used to authorize financial transactions without storing card details."
+  },
+  {
+    "name": "Payment Mode",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(payment[^\\s/(;)#|,=!>]{0,5}(?:mode|method|option|options|methodtype))"
+    ],
+    "tags": {},
+    "description": "Payment method chosen by user for transaction. Examples: payment_method=credit_card, pay_type=paypal, selected_payment=apple_pay. Look for user's actual payment choice in specific transaction. Critical: available_payment_methods, supported_payments list system capabilities, NOT user's actual choice."
+  },
+  {
+    "name": "Credit Score",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*((?:credit|cibil|crisil|fico|schufa)[^\\s/(;)#|,=!>]{0,10}score)"
+    ],
+    "tags": {},
+    "description": "Numeric value representing a person's creditworthiness, e.g., creditScore, cibil_score, ficoScore, schufaScore, crisilScore, credit_score_val, custCreditScore, userFicoScore."
+  },
+  {
+    "name": "Tax Information",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(tax[^\\s/(;)#|,=!>]{0,5}(?:information|group|rate|info|percent|statement|detail|amount|calculate|type|slip|number)|taxable[^\\s/(;)#|,=!>]{0,10}value|(?:standard|income|without)[^\\s/(;)#|,=!>]{0,10}tax|(form|name|box|item)1099)"
+    ],
+    "tags": {},
+    "description": "Details about tax rates, amounts, types, or numbers. E.g., taxRate, tax_amount, taxableValue, taxInfo, incomeTax, taxNumber, form1099, tax_detail, taxSlip, taxPercent."
+  },
+  {
+    "name": "Retirement Account Information",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(401k|(?:retirement|pension)[^\\s/(;)#|,=!>]{0,10}(?:plan|account)).*"
+    ],
+    "tags": {},
+    "description": "Details about retirement savings or pension accounts, e.g., 401kPlan, retirementAcct, pensionAccountID, 401k_number, retire_plan_id, pension_acct, or retAcctNo."
+  },
+  {
+    "name": "Payroll Information",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(payroll|pay[-_]roll).*"
+    ],
+    "tags": {},
+    "description": "Details about employee salary, wages, deductions, or payroll cycles. Example: payroll_id, pay_roll_amt, payrollDate, payrollStatus, pay-roll-cycle."
+  },
+  {
+    "name": "Expenses",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*((?:travel|lodging|food|mileage|healthcare|business|medical|travel)[^\\s/(;)#|,=!>]{0,10}(?:reimbursement|reimbursements|expense))"
+    ],
+    "tags": {},
+    "description": "Represents costs incurred, e.g., travelExpense, businessReimbursement, lodgingExpense, foodReimbursement, healthcareExpense, mileageExpense, medicalReimbursement, expenseType=lodging."
+  },
+  {
+    "name": "Company Allowances",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*((?:dearness|houserent|entertainment|overtime|compensatory|conveyance|leave[^\\s/(;)#|,=!>]{0,10}travel|medical|periodicals|books|withholding|personal|employment|child|basic[^\\s/(;)#|,=!>]{0,10}tax|travel|maternity|paternity)[^\\s/(;)#|,=!>]{0,10}allowance)"
+    ],
+    "tags": {},
+    "description": "Represents monetary benefits provided by an employer, such as dearness, house rent, medical, travel, overtime, or entertainment allowance. E.g., dearnessAllowance, hraAllowance, medical_allowance."
+  },
+  {
+    "name": "Stock or Equity Grants",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*((?:user|employee|incentive|phantom|common|restricted)[^\\s/(;)#|,=!>]{0,10}(?:stocks|equity)|stocks[^\\s/(;)#|,=!>]{0,10}grant|employee[^\\s/(;)#|,=!>]{0,10}stock[^\\s/(;)#|,=!>]{0,10}purchase[^\\s/(;)#|,=!>]{0,10}plan|incentive[^\\s/(;)#|,=!>]{0,10}stock[^\\s/(;)#|,=!>]{0,10}option|employee[^\\s/(;)#|,=!>]{0,10}stock[^\\s/(;)#|,=!>]{0,10}option[^\\s/(;)#|,=!>]{0,10}scheme|restricted[^\\s/(;)#|,=!>]{0,10}stock[^\\s/(;)#|,=!>]{0,10}units|stock[^\\s/(;)#|,=!>]{0,10}appreciation[^\\s/(;)#|,=!>]{0,10}rights|phantom[^\\s/(;)#|,=!>]{0,10}stocks|non[^\\s/(;)#|,=!>]{0,10}qualified[^\\s/(;)#|,=!>]{0,10}stock[^\\s/(;)#|,=!>]{0,10}options|stock[^\\s/(;)#|,=!>]{0,10}option[^\\s/(;)#|,=!>]{0,10}grant|restricted[^\\s/(;)#|,=!>]{0,10}stock[^\\s/(;)#|,=!>]{0,10}awards)"
+    ],
+    "tags": {},
+    "description": "Represents employee or user stock/equity grants, options, or awards. e.g: incentiveStockOption, empStockGrant, rsuUnits, esppPlan, phantomStock, commonStockGrant, stockAppreciationRights."
+  },
+  {
+    "name": "Salary",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(salary[^\\s/(;)#|,=!>]{0,10}(?:details|detail|slip|pay)|employee[^\\s/(;)#|,=!>]{0,10}salary|basic[^\\s/(;)#|,=!>]{0,10}salary|(?:dearness|houserent)[^\\s/(;)#|,=!>]{0,10}allowance|salary)|(previous|prev|current|curr)[^\\s/(;)#|,=!>]*(employee|employment)[^\\s/(;)#|,=!>]*(?:pay|salary)"
+    ],
+    "tags": {},
+    "description": "Monetary compensation paid to an employee. Variations: salary_amt, empSalary, basicSalary, salarySlip, payDetail, currEmployeeSalary, hraAllowance, daAllowance, prevEmpPay."
+  },
+  {
+    "name": "Benefits",
+    "category": "Financial Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(gym[^\\s/(;)#|,=!>]{0,10}membership|free[^\\s/(;)#|,=!>]{0,10}(?:lunch|snacks|breakfast|drinks|dinner)|employee[^\\s/(;)#|,=!>]{0,10}discount|employee[^\\s/(;)#|,=!>]{0,10}assistance[^\\s/(;)#|,=!>]{0,10}program|company[^\\s/(;)#|,=!>]{0,10}car|(?:retirement|pension)[^\\s/(;)#|,=!>]{0,10}plan|performance[^\\s/(;)#|,=!>]{0,10}bonus|(?:life|medical|dental|vision)[^\\s/(;)#|,=!>]{0,10}insurance|flexible[^\\s/(;)#|,=!>]{0,10}hours|company[^\\s/(;)#|,=!>]{0,10}shuttle|relocation[^\\s/(;)#|,=!>]{0,10}bonus|(?:paternity|maternity)[^\\s/(;)#|,=!>]{0,10}leave)"
+    ],
+    "tags": {},
+    "description": "Describes employee financial perks such as gymMembership, freeLunch, empDiscount, bonus, insurancePlan, pensionPlan, flexibleHours, companyCar, or relocationBonus. E.g. perfBonus, visionIns, empAssist."
+  },
+  {
+    "name": "Insurance Number",
+    "category": "Financial Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(insurance[^\\s/(;)#|,=!>]*(?:policy|plan|card|claim)|(?:insurance)[^\\s/(;)#|,=!>]*(?:card|policy|claim|plan|company)|card[^\\s/(;)#|,=!>]*insurance|insurance[^\\s/(;)#|,=!>]*policy[^\\s/(;)#|,=!>]*(?:nbr|number|id|no)|insurance[^\\s/(;)#|,=!>]*claim[^\\s/(;)#|,=!>]*(?:nbr|number|id|no)|ni[-_]?(?:nbr|no|number))"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive"
+    },
+    "description": "Unique identifier for an insurance policy or claim, e.g. insuranceNumber, policy_id, ni-no, cardInsurance, insuranceClaimNbr, insurancePlanID, insurancenumber."
+  },
+  {
+    "name": "Marital Status",
+    "category": "Personal Characteristics",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(marital|married|relationship[^\\s/(;)#|,=!>]{0,2}status).*"
+    ],
+    "tags": {},
+    "description": "Indicates if user is single, married, divorced, seperated, etc. e.g: marital_status, marriedStatus, relationshipStatus, userMarital, maritalStat"
+  },
+  {
+    "name": "Nationality",
+    "category": "Personal Characteristics",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(nationality|nationalities)"
+    ],
+    "tags": {},
+    "description": "Indicates a person's country of origin; e.g: nationality=US, user_nationality=Indian, nat=FR, or nationalities=CA."
+  },
+  {
+    "name": "Racial or Ethnic Origin",
+    "category": "Personal Characteristics",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*((?:racial|ethnic)[^\\s/(;)#|,=!>]{0,5}(?:origin|group)|ethnicity)"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Indicates a person's race or ethnicity, e.g., ethnicity=asian, user_racial_group=latino, ethnicOrigin=black, racialType=indian, ethnicityCode=wh."
+  },
+  {
+    "name": "Religion / Religious Beliefs",
+    "category": "Personal Characteristics",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(religion|religious[^\\s/(;)#|,=!>]{0,5}(group|community|practices|belief|beleifs))"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Indicates a person's religion or beliefs, e.g., religion:Christian, religiousBelief=Hindu, religionGroup:Muslim, user_religion=Jewish, religiousAffil:Buddhist."
+  },
+  {
+    "name": "Sexual Orientation",
+    "category": "Personal Characteristics",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(sexual[^\\s/(;)#|,=!>]{0,5}(orientation|nature|preference|inclination))"
+    ],
+    "tags": {},
+    "description": "Indicates a person's sexual preferences or orientation. e.g: sexualOrientation, sexual_pref, sexual-nature, sexualInclination, sexPref, usrSexualOrientation, soIncl."
+  },
+  {
+    "name": "Signature",
+    "category": "Personal Characteristics",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(?:person|customer|user|buyer|seller|publisher|CEO|CFO)[^\\s/(;)#|,=!>]{0,5}signature"
+    ],
+    "tags": {},
+    "description": "Represents a user's handwritten or digital signature (e.g., userSignature, buyer_signature, personSign), used to verify identity or authorize actions. Variants: customerSign, publisherSignature."
+  },
+  {
+    "name": "Weight",
+    "sensitivity": "medium",
+    "category": "Personal Characteristics",
+    "sensitive": false,
+    "patterns": [
+      "body[^\\s/(;)#|,=!>]{0,5}mass[^\\s/(;)#|,=!>]{0,5}index|body[^\\s/(;)#|,=!>]{0,5}weight|weight[^\\s/(;)#|,=!>]{0,5}(?:kg|kgs|pound|pounds)|(?:body|person|patient|baby|student|user|girl|boy|male|female)[^\\s/(;)#|,=!>]{0,5}weight"
+    ],
+    "tags": {},
+    "description": "Body weight or mass of a person. Examples: weight=75kg, user_weight=165lbs, bmi=22.5, patient_weight=70. Look for numeric values with weight units (kg/lbs/pounds) in health or profile contexts. Critical: u_w is viewport width (NOT body weight), also exclude product_weight, shipping_weight, or package dimensions."
+  },
+  {
+    "name": "Ratings",
+    "category": "User Content Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "((?:user|product|movie|show|drama|coach|buyer|seller|doctor|hospital|college|hotel|agent|author|customer|artist|photo|policyholder|insurer|claimant|average|total)[^\\s/(;)#|,=!>]{0,5}){0,1}(?:rating|ratings)"
+    ],
+    "tags": {},
+    "description": "User-provided score or feedback value, e.g., userRating, product_rating, avgRating, movieRatings, hotelRating, doctorRating, ratingValue, seller_ratings, or customerRating."
+  },
+  {
+    "name": "Reviews",
+    "category": "User Content Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(((?:user|movie|drama|coach|buyer|seller|doctor|hospital|college|hotel|agent|policyholder|insurer|claimant)[^\\s/(;)#|,=!>]{0,4}){0,1}(?:review|reviews))"
+    ],
+    "tags": {},
+    "description": "User-submitted comments, feedback, or ratings about products or services. Eg: userReview, movieReviews, buyerReview, doctorreview, hotelReview, sellerReviews, agentreview."
+  },
+  {
+    "name": "Emails or Text Messages",
+    "category": "User Content Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(email[^\\s/(;)#|,=!>]{0,5}(?:content|message|msg|text))"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive"
+    },
+    "description": "Contains content of user emails or text messages, e.g. emailMessage, emailContent, emailMsg, emailText, email_message, emailMsgBody, emailTextContent, or similar variations."
+  },
+  {
+    "name": "Customer Support",
+    "category": "User Content Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "support[^\\s/(;)#|,=!>]{0,10}ticket|customer[^\\s/(;)#|,=!>]{0,12}(?:complaint|support)"
+    ],
+    "tags": {},
+    "description": "Support tickets or help requests submitted by specific users. Examples: ticket_id=HELP-123456, support_case=USR789-ISSUE, complaint_number=2024-CMP-001. Look for ticket IDs or case numbers created when users request help. Critical: support_docs, FAQ_pages, help_articles are general resources, NOT user-specific support requests."
+  },
+  {
+    "name": "NPS or CSAT Scores",
+    "category": "User Content Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(((?:nps|csat|net[^\\s/(;)#|,=!>]{0,15}promoter)([^\\s/(;)#|,=!>]{0,15}(?:score|feedback)){0,1}|customer[^\\s/(;)#|,=!>]{0,15}satisfaction)|(product[^\\s/(;)#|,=!>]{0,10}feedback|(feedback|survey)[^\\s/(;)#|,=!>]{0,5}(response|result))).*|feedback"
+    ],
+    "tags": {},
+    "description": "Numeric or text values reflecting user satisfaction, e.g. NPS=9, csat_score=5, netPromoter=10, customerSatisfaction=high, feedback_result=positive, surveyResponse=7, prod_feedback=good."
+  },
+  {
+    "name": "Crash Data",
+    "category": "Technical Data",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(crash[^\\s/(;)#|,=!>]{0,5}(?:report|status|file|dump|table|log)).*"
+    ],
+    "tags": {},
+    "description": "Crash Data includes logs or reports on system/app failures. e.g: crashReport, crashLog, crashStatus, crashDump, crashFile, crashTable, crshRpt, crshLog, crash_report, crash-dump."
+  },
+  {
+    "name": "Browsing History",
+    "category": "Technical Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "browsing[^\\s/(;)#|,=!>]*history|website[^\\s/(;)#|,=!>]*visited|web[^\\s/(;)#|,=!>]*pages[^\\s/(;)#|,=!>]*visited"
+    ],
+    "tags": {},
+    "description": "Individual user's sequence of visited pages over time. Examples: user_browsing=[/home,/products,/checkout], page_history=usr123_navigation, clickpath_sequence=session_abc_pages. Look for page sequences tied to specific user ID or session. Critical: Aggregated analytics like \"1000 users visited this page\" is NOT individual browsing history - must be tied to specific user."
+  },
+  {
+    "name": "Technical Diagnostic Data",
+    "category": "Technical Data",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*((?:performance)[^\\s/(;)#|,=!>]{0,5}(?:report|dump|info|log)|(cpu|memory|disk)[^\\s/(;)#|,=!>]{0,5}(usage|freq|available|used)).*"
+    ],
+    "tags": {},
+    "description": "Contains system performance or diagnostic info, e.g., performancelog, cpuUsage, memory_used, diskAvailable, perfReport, cpu_freq. Used for monitoring, troubleshooting, or health checks."
+  },
+  {
+    "name": "Browsing Time",
+    "category": "Technical Data",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(browsing[^\\s/(;)#|,=!>]{0,10}(?:time|duration))"
+    ],
+    "tags": {},
+    "description": "Timestamp or duration capturing user's site activity, e.g., browsingTime, browsing_duration, brwsngTimeMs, bTime, bDur, browsingTimeSpent."
+  },
+  {
+    "name": "Disability or Specific Condition",
+    "category": "Health Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(locomotor[^\\s/(;)#|,=!>]*disability|mental[^\\s/(;)#|,=!>]*illness|cerebral[^\\s/(;)#|,=!>]*palsy|hearing[^\\s/(;)#|,=!>]*impairment|muscular[^\\s/(;)#|,=!>]*dystrophy|multiple[^\\s/(;)#|,=!>]*sclerosis|hiv[^\\s/(;)#|,=!>]*aids|physical[^\\s/(;)#|,=!>]*disability|mental[^\\s/(;)#|,=!>]*disability|alzheimer|thalassemia|hemophilia|autism|cancer|dwarfism|blindness|handicapped|wheelchair|diabetic|dyslexia|epilepsy|schizophrenia|depression|physical[^\\s/(;)#|,=!>]disorder).*"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive",
+      "MHMDA": "Consumer Health Data"
+    },
+    "description": "Indicates a specific health condition or disability, e.g. autism_status, is_diabetic, mentalIllness, cancerType, wheelchairUser, hearingImpairment, disability_status."
+  },
+  {
+    "name": "Illness or Medical Condition",
+    "category": "Health Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(health[^\\s/(;)#|,=!>]{0,10}record|medical[^\\s/(;)#|,=!>]{0,10}condition|(?:user|person|customer|employee)[^\\s/(;)#|,=!>]{0,10}health|illness[^\\s/(;)#|,=!>]{0,10}(?:record|name|data|type|date))"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive",
+      "MHMDA": "Consumer Health Data"
+    },
+    "description": "Describes user's illness or medical condition, e.g., medicalCondition=asthma, illnessType=flu, userHealth=diabetes, employeeMedical=hypertension, healthRecord=anemia."
+  },
+  {
+    "name": "Maternity Leave Details",
+    "category": "Health Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(maternity[^\\s/(;)#|,=!>]{0,10}leave).*"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive",
+      "MHMDA": "Consumer Health Data"
+    },
+    "description": "Information about an individual's maternity leave status or duration, e.g., maternityLeave, maternity_leave_days, matLeaveStatus, maternityLeaveStart, maternity_leave_end."
+  },
+  {
+    "name": "Paternity Leave Details",
+    "category": "Health Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(paternity[^\\s/(;)#|,=!>]{0,10}leave).*"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive",
+      "MHMDA": "Consumer Health Data"
+    },
+    "description": "Information about employee's paternity leave, such as start/end dates or status. e.g: paternityLeave, pat_leave_start, paternity-leave-duration, patLeaveStatus, pat-leave-request."
+  },
+  {
+    "name": "Medical Certificates",
+    "category": "Health Data",
+    "sensitive": true,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(blood[^\\s/(;)#|,=!>]{0,10}report|medical[^\\s/(;)#|,=!>]{0,10}(?:report|test)|medical[^\\s/(;)#|,=!>]{0,10}certificate|blood[^\\s/(;)#|,=!>]{0,10}group).*"
+    ],
+    "tags": {
+      "GDPR": "GDPR Sensitive",
+      "CPRA": "CPRA Sensitive",
+      "MHMDA": "Consumer Health Data"
+    },
+    "description": "Medical Certificates: Documents or info confirming medical status, e.g., medicalCertificate, medCert, bloodReport, medical_report, bloodGroup, medicalTest in fields or param names."
+  },
+  {
+    "name": "Date of Birth",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "(dob|(.*(date[^\\s/(;)#|,=!>]{0,5}of[^\\s/(;)#|,=!>]{0,5}birth|birth[^\\s/(;)#|,=!>]{0,5}(?:day|date|month|year)|birth[-_]{0,2}dt)))"
+    ],
+    "tags": {},
+    "description": "Represents an individual's birth date. e.g: dob, dateofbirth, birthdate, bday, birth_dt, birth-year, birth_month, birthDay, bdate, birthdate=1990-01-01"
+  },
+  {
+    "name": "First Name",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*((?:first|given)[^\\s/(;)#|,=!>]{0,5}|fore[-_]?|full[-_]?)name|f[_]?name"
+    ],
+    "tags": {},
+    "description": "First name or given name identifying an individual. e.g: fname, first_name, givenName, forename, full_name=John, userFName, fname=Jane, customerFirstName."
+  },
+  {
+    "name": "Gender",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "((.*gender)|is[_-]{0,1}male|is[_-]{0,1}female|sex)"
+    ],
+    "tags": {},
+    "description": "Gender or biological sex of a person. Examples: gender=male, user_sex=F, is_female=true, customer_gender=M. Look for values like M/F, Male/Female, 0/1 in user profiles. Critical: 'sex' parameter alone often refers to content categories (e.g., 'Sex & Relationships' pages) - requires user profile context to be personal data."
+  },
+  {
+    "name": "Last Name",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*((?:last|sur(?!geon))[^\\s/(;)#|,=!>]{0,5}name)|l[_]?name"
+    ],
+    "tags": {},
+    "description": "Surname or family name of a person, lastname, lname, last_name, l_name, surName, userLastName, or cust_lname."
+  },
+  {
+    "name": "Age",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "^(user|person|customer|under|years|yrs|human)?(_)?(of|in)?(_)?(age)$",
+      "^(age)(_)?(of|in)?(_)?(human|years|yrs|user|person|customer)?$"
+    ],
+    "tags": {},
+    "description": "Age of a person in years. Examples: user_age=25, customer_age=30, age_years=45. Look for numeric values 0-150 in user profile contexts. Critical: Plain 'age' parameter often means cache_age, content_age, or page_age - requires clear user/demographic context like surrounded by name, email, or other personal fields."
+  },
+  {
+    "name": "Employee Code",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "(?:.*employee|emp)[^\\s/(;)#|,=!>]{0,10}(?:no|number|code|id|nbr|num)"
+    ],
+    "tags": {},
+    "description": "Individual employee's unique identifier within organization. Examples: employee_id=EMP123456, staff_code=STAFF-789, worker_number=WRK001. Look for IDs assigned to individual employees. Critical: department_code, team_id, role_id identify organizational units, NOT individual employees."
+  },
+  {
+    "name": "Photograph",
+    "category": "Personal Identification",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(?:profile|employee|user)[^\\s/(;)#|,=!>]{0,5}(?:picture|image|pic|photo)"
+    ],
+    "tags": {},
+    "description": "Photograph used for personal ID, e.g., profilePicture, user_image, employeePic, profile-photo, userpic, profileImg. May appear as img URLs or base64-encoded image data."
+  },
+  {
+    "name": "Precise Location",
+    "category": "Location Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(.*(gps[^\\s/(;)#|,=!>]{0,3}(?:location|position|trace)|user[^\\s/(;)#|,=!>]{0,5}location|latitude|longitude|geo[^\\s/(;)#|,=!>]{0,5}coordinates)|(lat|lon|latlng|latlon))"
+    ],
+    "tags": {
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "High-accuracy geolocation data representing the user or device's exact position, typically obtained via GPS, WiFi triangulation, or similar sensors. Values are latitude and longitude coordinates with MORE than two decimal places (e.g., 37.774929, -122.419416). Example fields: gpsLocation, geoCoordinates, latitude, longitude, latlng, latlon, lat, lon (only when precision exceeds two decimal places)."
+  },
+  {
+    "name": "Cookies",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(cookie([s]?$))"
+    ],
+    "tags": {}
+  },
+  {
+    "name": "Device Identifier",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(device[^\\s/(;)#|,=!>]{0,5}(?:id|info|details|token))|imei"
+    ],
+    "tags": {},
+    "description": "Unique identifier linked to a user's device; e.g: mobile info, desktop info, deviceId, device-info, deviceToken, deviceDetails, imei, x-deviceid, dev_id, deviceinfo, android id, ios id etc"
+  },
+  {
+    "name": "IP Address",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(?:(?<!(sh|tr)[-_]{0,1})ip|ipv4|ipv6)[^\\s/(;)#|,=!>]{0,10}address|machine[^\\s/(;)#|,=!>]{0,10}ip|ip|remoteip"
+    ],
+    "tags": {},
+    "description": "Network address identifying user's device. Examples: ip_address=203.0.113.0, user_ip=192.0.2.1, client_ip=2001:db8::1. Look for IPv4 or IPv6 addresses in user tracking contexts. Critical: Localhost (127.0.0.1), private networks (10.x, 192.168.x, 172.16-31.x) and server_ip are infrastructure, not user data."
+  },
+  {
+    "name": "MAC Address",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(mac|ieee)[^\\s/(;)#|,=!>]{0,2}(?:address|ip)|ip[^\\s/(;)#|,=!>]{0,2}mac"
+    ],
+    "tags": {},
+    "description": "Unique hardware identifier for network devices. e.g: mac, mac_address, client_mac, ieee_address, macid, device_mac, ipmac, macAddr. Used to track device connectivity."
+  },
+  {
+    "name": "Pixel",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      ".*(online[^\\s/(;)#|,=!>]{0,10}identifier|online[^\\s/(;)#|,=!>]{0,10}identity|(tracking|ad|advertising)[^\\s/(;)#|,=!>]{0,10}pixel)"
+    ],
+    "tags": {},
+    "description": "A small code snippet or identifier used to track online activity, e.g., fbp, ga_pixel, trk_pixel, adpixel, pixel_id, tracking_pixel."
+  },
+  {
+    "name": "Advertising Identifiers",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "idfa|idfv|aaid|advertising[^\\s/(;)#|,=!>]{0,5}id|gps[^\\s/(;)#|,=!>]{0,5}adid"
+    ],
+    "tags": {},
+    "description": "Mobile advertising IDs for ad personalization. Examples: idfa=EA7583CD-A667-48BC-B806-42ECB2B48606, gaid=38400000-8cf0-11bd-b23e-10b96e40000d, advertising_id=12345678-1234-1234. Look for IDFA (iOS) or GAID/AAID (Android) in UUID format. Critical: campaign_id, ad_group_id, creative_id are marketing campaign identifiers, NOT device advertising IDs."
+  },
+  {
+    "name": "Educational History",
+    "category": "Educational Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "educational[^\\s/(;)#|,=!>]{0,10}history|(?:master|bachelor)[^\\s/(;)#|,=!>]{0,10}degree|attended[^\\s/(;)#|,=!>]{0,10}(?:universities|university|school|college)|(?:universities|university|school|college)[^\\s/(;)#|,=!>]{0,10}attended"
+    ],
+    "tags": {},
+    "description": "Details of academic background such as degrees earned or institutions attended. e.g: bachelorDegree, schoolAttended, edu_history, universityAttended, mastersDegree."
+  },
+  {
+    "name": "Skills",
+    "category": "Educational Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "(?:technical|speaking|programming|soft)[^\\s/(;)#|,=!>]{0,10}skills"
+    ],
+    "tags": {},
+    "description": "Describes user's abilities or proficiencies, e.g., programmingSkills=Python, softSkills=communication, technicalSkills=Java, speakingSkills=French, skills=Excel;leadership."
+  },
+  {
+    "name": "Academic Transcripts",
+    "category": "Educational Background",
+    "sensitive": false,
+    "sensitivity": "low",
+    "patterns": [
+      "academic[^\\s/(;)#|,=!>]{0,10}transcripts|(?:diploma|bachelor|[^\\s/(;)#|,=!>]{0,10}degree|masters[^\\s/(;)#|,=!>]{0,10}degree|pg|degree)[^\\s/(;)#|,=!>]{0,10}certificate"
+    ],
+    "tags": {},
+    "description": "Academic transcripts detail courses, grades, and degrees earned. Seen as academicTranscript, bachelorDegreeCert, mastersCert, diplomaCopy, or pgCertificate."
+  },
+  {
+    "name": "Account ID",
+    "category": "Account Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(?:account|user|customer|doctor|patient|policyholder|insurer|claimant)[^\\s/(;)#|,=!>]{0,3}(id|number|no|num)"
+    ],
+    "tags": {},
+    "description": "Unique identifier for a user account. Examples: account_id=USR123456, user_id=12345, customer_no=CUST-789. Look for alphanumeric IDs assigned to user accounts in systems. Critical: Exclude session_id, request_id, transaction_id (temporary identifiers), and system/service account IDs."
+  },
+  {
+    "name": "Social Media Login Identifier",
+    "category": "Account Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(?:facebook|twitter|instagram|linkedin|pinterest|behance|dribble)[^\\s/(;)#|,=!>]{0,2}(?:id|account|username|handle)"
+    ],
+    "tags": {},
+    "description": "Social platform ID used for authentication. Examples: google_oauth_id=1234567890, facebook_login_id=fb_auth_456, twitter_sso_id=tw_user_789. Look for OAuth/SSO identifiers from social platforms. Critical: social_login_button, oauth_config, sso_settings are authentication setup, NOT user's actual social login ID."
+  },
+  {
+    "name": "Language Preferences",
+    "sensitivity": "low",
+    "category": "Account Data",
+    "sensitive": false,
+    "patterns": [
+      ".*language.*"
+    ],
+    "tags": {},
+    "description": "Indicates user's language choice, e.g., lang=en, user_language=fr, preferredLanguage=es. Used to personalize content or UI based on selected language."
+  },
+  {
+    "name": "Account Password",
+    "category": "Account Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(.*(?<!(db|database|jira|sql|postgres|mongo|aws)[^\\s/(;)#|,=!>]{0,3})(pwd|psw|pswd|password|passwrd))"
+    ],
+    "tags": {},
+    "description": "User's secret authentication credential. Examples: password=***, user_pwd=encrypted, login_psw=hashed_value. Look for password fields in login/registration forms. Critical: Exclude api_key, db_password, aws_secret (system credentials), and password requirements/policies."
+  },
+  {
+    "name": "Mnemonic",
+    "category": "Account Data",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*(mnemonic)"
+    ],
+    "tags": {},
+    "description": "Mnemonic phrase or code used for account recovery or authentication. e.g: mnemonic, mnemonic_phrase, userMnemonic, mnemonicKey, mnemo"
+  },
+  {
+    "name": "Account Name",
+    "category": "Account Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      "(.*(?<!(db|database|jira|sql|postgres|mongo|aws)[^\\s/(;)#|,=!>]{0,3})user[^\\s/(;)#|,=!>]{0,3}name)|(.*(account|customer|doctor|patient|teacher|student|person|organi[zs]ation|company)[^\\s/(;)#|,=!>]{0,3}name)"
+    ],
+    "tags": {},
+    "description": "User's account name or username. Examples: username=johndoe, account_name=jane_smith, user_name=michael123. Look for human-readable account identifiers in login/profile contexts. Critical: Exclude service_account, system_user, db_user (technical accounts)."
+  },
+  {
+    "name": "Click Stream",
+    "category": "Usage Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(click(stream|track|log)|track{0,2}click|number[^\\s/(;)#|,=!>]{0,10}of[^\\s/(;)#|,=!>]{0,10}(?:clicks|click)|count[^\\s/(;)#|,=!>]{0,10}(?:clicks|click)).*|trackInteractions|trackFrustrations"
+    ],
+    "tags": {},
+    "description": "Records user interactions like clicks, taps, or navigation; e.g., clickStream, clickTrack, trackClick, numberOfClicks, click_count, trackInteractions, trackFrustrations."
+  },
+  {
+    "name": "Search History",
+    "category": "Usage Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(search[^\\s/(;)#|,=!>]{0,12}history|saved[^\\s/(;)#|,=!>]{0,12}search|past[^\\s/(;)#|,=!>]{0,12}searches).*"
+    ],
+    "tags": {},
+    "description": "Records of user search queries, e.g., searchHistory, savedSearch1, pastSearch, srch_hist, or prev_searches, capturing terms or phrases entered by users."
+  },
+  {
+    "name": "Product Interactions",
+    "category": "Usage Data",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(buttons[-_]{0,1}clicked|pages[-_]{0,1}viewed|event[-_]{0,1}(streaming|monitoring|analysis|tracking)[-_]{0,1}data).*"
+    ],
+    "tags": {},
+    "description": "Tracks user actions with products, such as buttons_clicked, pagesViewed, event_streamingData, event-monitoring, eventTracking, or productInteractionData."
+  },
+  {
+    "name": "Passport",
+    "category": "National Identification Numbers",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(.*passport[^\\s/(;)#|,=!>]{0,10}(?:no|number|id|expiry|validity|country))"
+    ],
+    "tags": {
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Passport number or details used for identification, e.g., passportNo, passNo, passport_id, passportNumber, passportExpiry, passportCountry, pass_num, pport_no, pport_expiry."
+  },
+  {
+    "name": "Driving License",
+    "category": "National Identification Numbers",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      ".*((?:driving|driver)[^\\s/(;)#|,=!>]{0,5}(?:license|lisense|licence)[^\\s/(;)#|,=!>]{0,5}(?:no|number|id)|(?:driving|driver)[^\\s/(;)#|,=!>]{0,5}(?:license|lisense|licence))"
+    ],
+    "tags": {
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Driving License number or ID, often appears as driving_license_no, driverLicNum, dl_number, or drvLicID; may be formatted as plain text, with dashes, or as part of user profile data."
+  },
+  {
+    "name": "Social Security Number",
+    "category": "National Identification Numbers",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(social[^\\s/(;)#|,=!>]{0,5}security[^\\s/(;)#|,=!>]{0,5}(?:number|no|id)|.*_ssn|ssn)"
+    ],
+    "tags": {
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "US government-issued 9-digit taxpayer identification number. Examples: ssn=123-45-6789, social_security_number=123456789, user_ssn=XXX-XX-6789. Look for exactly 9 numeric digits in formats XXX-XX-XXXX or XXXXXXXXX in identity, tax, or employment contexts. Critical: Must be NUMERIC ONLY (no letters), exactly 9 digits, in SSN format. Exclude: technical IDs containing 'ssn' substring (uid-ssn, key_ssn), alphanumeric values, session IDs, or any non-numeric identifiers even if parameter contains 'ssn'."
+  },
+  {
+    "name": "Taxpayer Identification Number",
+    "category": "National Identification Numbers",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(tax[^\\s/(;)#|,=!>]{0,3}payer[^\\s/(;)#|,=!>]{0,3}(identification|id)[^\\s/(;)#|,=!>]{0,3}(?:number|no)|tin|(i|a|p)tin)"
+    ],
+    "tags": {
+      "CPRA": "CPRA Sensitive"
+    },
+    "description": "Unique national ID for tax purposes, e.g., TIN, TaxPayerID, TaxIDNo, ITIN, PTIN, tax_id, tin_no, taxpayer_number, or itin"
+  },
+  {
+    "name": "Employer Identification Number",
+    "category": "National Identification Numbers",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(employer[^\\s/(;)#|,=!>]{0,3}(identification|id)[^\\s/(;)#|,=!>]{0,3}(?:number|no)|ein)"
+    ],
+    "tags": {},
+    "description": "unique identifier assigned to businesses for tax purposes. e.g: EIN, employer_id, employerIdentificationNo, employer-id, ein_number, employerID, employerIdentNo"
+  },
+  {
+    "name": "Personal Public Service Number",
+    "category": "National Identification Numbers",
+    "sensitive": false,
+    "sensitivity": "high",
+    "patterns": [
+      "(personal[^\\s/(;)#|,=!>]{0,3}(public)[^\\s/(;)#|,=!>]{0,3}(?:number|no)|pps[-_]?(?:nbr|no|number))"
+    ],
+    "tags": {},
+    "description": "Personal Public Service Number (PPSN), unique Irish ID, often appears as personalpublicserviceno, pps_no, pps-number, or ppsno."
+  },
+  {
+    "name": "User Agent",
+    "category": "Online Identifiers",
+    "sensitive": false,
+    "sensitivity": "medium",
+    "patterns": [
+      ".*(user[^\\s/(;)#|,_=!>]{0,5}(?:agent))"
+    ],
+    "tags": {},
+    "description": "String identifying browser, device, OS, or app version, e.g., Mozilla/5.0, UA, user_agent, userAgent, user-agent, ua_str."
+  },
+  {
+    "name": "Fingerprint Scans",
+    "category": "Biometric Data",
+    "description": "Unique biometric identifier from a user's fingerprint, fp_hash, finger_id, fprint, or biometric_fp.",
+    "tags": {},
+    "sensitive": false,
+    "sensitivity": "high"
+  },
+  {
+    "name": "Height",
+    "category": "Personal Characteristics",
+    "description": "Physical height of a person. Examples: height=175cm, user_height=5'9\", person_ht=1.75m, height_in_inches=70. Look for numeric values with units (cm/m/ft/in) in user profile or health contexts. Critical: u_h and u_w are viewport dimensions (NOT personal measurements), also exclude pixel heights (786px), container_height, or element dimensions.",
+    "tags": {},
+    "sensitive": false,
+    "sensitivity": "high"
+  },
+  {
+    "name": "User Location",
+    "category": "Contact Data",
+    "description": "Personal location information that identifies where a customer or user lives, receives deliveries, or personally resides. This includes user addresses, home locations, and personal geographic identifiers such as postal code, address, pincode, region, district, city, state, country, postal codes when associated with customer/user/account/billing/shipping/delivery context. This does NOT include business locations (store, restaurant, merchant, branch), system configuration (app country, language settings), or generic parameters (storeNumber, variables)",
+    "tags": {},
+    "sensitive": false,
+    "sensitivity": "medium"
+  },
+  {
+    "name": "Coarse Geo Coordinates",
+    "category": "Location Data",
+    "description": "Approximate geolocation data with intentionally reduced precision to avoid exact tracking. Values are latitude and longitude coordinates with UP TO two decimal places (e.g., 37.77, -122.41). This includes truncated or rounded coordinates and center points of regions. Example fields: lat, lon (only when precision is two decimal places or less), truncatedLat, truncatedLong, regionLat, regionLong.",
+    "tags": {
+      "CPRA": "CPRA Sensitive"
+    },
+    "sensitive": false,
+    "sensitivity": "high"
+  },
+  {
+    "name": "User Consent Data",
+    "category": "Account Data",
+    "description": "User's actual consent choices for data processing. Examples: gdpr_consent=accepted, cookie_consent=true, marketing_optin=false, privacy_accepted=2024-01-15. Look for boolean/date values showing user's consent status. Critical: consent_form_template, privacy_policy_text, terms_of_service are documents/forms, NOT user's actual consent status.",
+    "tags": {},
+    "sensitive": false,
+    "sensitivity": "low"
+  },
+  {
+    "name": "Unique User Identifier",
+    "category": "Account Data",
+    "description": "Persistent ID tracking same user across sessions. Examples: user_uuid=550e8400-e29b-41d4, visitor_id=persistent_usr_123, tracking_id=cross_session_456. Look for IDs that remain constant for user across multiple visits. Critical: session_id, request_id, transaction_id are temporary for single session/request, NOT persistent user tracking.",
+    "tags": {},
+    "sensitive": false,
+    "sensitivity": "medium"
+  },
+  {
+    "name": "User Video Viewing Data",
+    "category": "Usage Data",
+    "description": "User's video watching behavior and history. Examples: watched_videos=[video123,video456], viewing_time=45min, last_watched_position=12:34, video_progress=75%. Look for watch history, viewing duration, or engagement metrics tied to specific user. Critical: video_codec, video_resolution, player_settings are technical properties, NOT user's viewing behavior.",
+    "tags": {},
+    "sensitive": false,
+    "sensitivity": "low"
+  }
+]

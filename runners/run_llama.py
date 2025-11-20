@@ -17,7 +17,8 @@ from common import (
     JSONLReader, JSONLWriter, PerformanceTracker,
     create_result_record, get_device, logger,
     load_pii_prompt_template, parse_llm_response,
-    load_batch_verification_prompt_template, parse_batch_verification_response
+    load_batch_verification_prompt_template, parse_batch_verification_response,
+    load_data_element_descriptions, format_element_descriptions
 )
 
 
@@ -73,6 +74,9 @@ class LlamaVerifier:
 
         # Load NEW batch verification prompt template
         self.batch_prompt_template = load_batch_verification_prompt_template(with_reasoning)
+
+        # Load data element descriptions
+        self.element_descriptions = load_data_element_descriptions()
 
         logger.info("Llama 3.2 model loaded successfully")
 
@@ -273,10 +277,14 @@ class LlamaVerifier:
             - If with_reasoning=False: List of verified PII names
             - If with_reasoning=True: List of dicts with pii, verified, reason
         """
+        # Format element descriptions for detected PIIs
+        formatted_descriptions = format_element_descriptions(detected_piis, self.element_descriptions)
+
         # Create prompt
         prompt = self.batch_prompt_template.format(
             input_text=input_text,
-            detected_piis=str(detected_piis)
+            detected_piis=str(detected_piis),
+            element_descriptions=formatted_descriptions
         )
 
         logger.info("=" * 80)

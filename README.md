@@ -167,62 +167,149 @@ python -c "from transformers import AutoModelForCausalLM, AutoTokenizer; \
   AutoTokenizer.from_pretrained('Qwen/Qwen2.5-3B-Instruct').save_pretrained('./models/qwen_2.5_3b')"
 ```
 
+## Available Models
+
+### Recommended Models (≤5GB RAM with 4-bit quantization)
+
+| Model | Parameters | FP16 RAM | 4-bit RAM | Latency | Accuracy | Status | Recommendation |
+|-------|------------|----------|-----------|---------|----------|--------|----------------|
+| **Phi-3-mini** | 3.8B | 7.6GB | **2.8GB** | 800-1200ms | 85-92% | ⭐⭐⭐⭐⭐ | **Best Reasoning** |
+| **Llama 3.2 3B** | 3B | 6.8GB | **2.5GB** | 1500-2100ms | 90%+ | ⭐⭐⭐⭐⭐ | Accurate but slow |
+| **Qwen 2.5 3B** | 3B | 6.5GB | **2.3GB** | 1200-1800ms | 88-93% | ⭐⭐⭐⭐⭐ | Balanced |
+| **Gemma-2-2B** | 2B | 4.5GB | **1.5GB** | 600-900ms | 80-88% | ⭐⭐⭐⭐ | Fastest viable |
+| **Qwen 2.5 1.5B** | 1.5B | 3.5GB | **1.2GB** | 500-800ms | 75-82% | ⭐⭐⭐ | Budget option |
+| **Llama 3.2 1B** | 1B | 2.5GB | **1.0GB** | 500-800ms | 70-78% | ⭐⭐ | Too small |
+| **Qwen 2.5 0.5B** | 0.5B | 1.5GB | **0.5GB** | 300-500ms | <70% | ❌ | Failed - too small |
+
+### Models NOT Recommended (>5GB RAM after quantization)
+
+| Model | Parameters | FP16 RAM | 4-bit RAM | Why Not Recommended |
+|-------|------------|----------|-----------|---------------------|
+| Llama 3.1 8B | 8B | 16GB | **6.5GB** | Exceeds 5GB limit |
+| Mistral 7B | 7B | 14GB | **5.8GB** | Exceeds 5GB limit |
+| Qwen 2.5 7B | 7B | 14GB | **5.5GB** | Exceeds 5GB limit |
+| Gemma-2-9B | 9B | 18GB | **7.2GB** | Exceeds 5GB limit |
+
 ## Quick Start
 
-### Basic Usage (4-bit Default, Simple Mode)
+### 1. Phi-3-mini (3.8B) - Best Reasoning ⭐⭐⭐⭐⭐
 
 ```bash
-# Llama 3.2 3B (2.5GB VRAM, 4-bit enabled by default)
-python runners/run_llama.py \
-  --input data/training_all_elements.jsonl \
-  --output results/llama_3b_results.jsonl \
-  --model-path meta-llama/Llama-3.2-3B-Instruct
+# Simple mode (comma-separated output)
+python3 runners/run_phi3.py \
+  --input data/test_sample.jsonl \
+  --output results/phi3_test.jsonl \
+  --model-path microsoft/Phi-3-mini-4k-instruct
 
-# Qwen 2.5 3B (2.3GB VRAM, 4-bit enabled by default)
-python runners/run_qwen.py \
-  --input data/training_all_elements.jsonl \
-  --output results/qwen_3b_results.jsonl \
-  --model-path Qwen/Qwen2.5-3B-Instruct
+# With reasoning (JSON output with explanations)
+python3 runners/run_phi3.py \
+  --input data/test_sample.jsonl \
+  --output results/phi3_reasoning.jsonl \
+  --model-path microsoft/Phi-3-mini-4k-instruct \
+  --with-reasoning
+
+# With vLLM (faster inference)
+python3 runners/run_phi3.py \
+  --input data/test_sample.jsonl \
+  --output results/phi3_vllm.jsonl \
+  --model-path microsoft/Phi-3-mini-4k-instruct \
+  --use-vllm
 ```
 
-### With Reasoning (Detailed Explanations)
+### 2. Gemma-2-2B (2B) - Fastest Viable ⭐⭐⭐⭐
 
 ```bash
-# Get detailed reasoning for each PII verification
-python runners/run_llama.py \
-  --input data/training_all_elements.jsonl \
+# Simple mode (comma-separated output)
+python3 runners/run_gemma.py \
+  --input data/test_sample.jsonl \
+  --output results/gemma2_test.jsonl \
+  --model-path google/gemma-2-2b-it
+
+# With reasoning (JSON output with explanations)
+python3 runners/run_gemma.py \
+  --input data/test_sample.jsonl \
+  --output results/gemma2_reasoning.jsonl \
+  --model-path google/gemma-2-2b-it \
+  --with-reasoning
+
+# With vLLM (faster inference)
+python3 runners/run_gemma.py \
+  --input data/test_sample.jsonl \
+  --output results/gemma2_vllm.jsonl \
+  --model-path google/gemma-2-2b-it \
+  --use-vllm
+```
+
+### 3. Llama 3.2 3B - Most Accurate ⭐⭐⭐⭐⭐
+
+```bash
+# Simple mode (comma-separated output)
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3b_test.jsonl \
+  --model-path meta-llama/Llama-3.2-3B-Instruct
+
+# With reasoning (JSON output with explanations)
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
   --output results/llama_3b_reasoning.jsonl \
   --model-path meta-llama/Llama-3.2-3B-Instruct \
   --with-reasoning
-```
 
-### Advanced Options
+# With vLLM (faster inference)
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3b_vllm.jsonl \
+  --model-path meta-llama/Llama-3.2-3B-Instruct \
+  --use-vllm
 
-```bash
-# Disable 4-bit quantization (use FP16, requires 6.8GB VRAM)
-python runners/run_llama.py \
-  --input data/training_all_elements.jsonl \
+# Without quantization (FP16 - requires 6.8GB VRAM)
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
   --output results/llama_3b_fp16.jsonl \
   --model-path meta-llama/Llama-3.2-3B-Instruct \
   --disable-quantization
+```
 
-# Use vLLM for faster inference (requires 7.5GB VRAM)
-python runners/run_qwen.py \
-  --input data/training_all_elements.jsonl \
+### 4. Qwen 2.5 3B - Balanced ⭐⭐⭐⭐⭐
+
+```bash
+# Simple mode (comma-separated output)
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_3b_test.jsonl \
+  --model-path Qwen/Qwen2.5-3B-Instruct
+
+# With reasoning (JSON output with explanations)
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_3b_reasoning.jsonl \
+  --model-path Qwen/Qwen2.5-3B-Instruct \
+  --with-reasoning
+
+# With vLLM (faster inference)
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
   --output results/qwen_3b_vllm.jsonl \
   --model-path Qwen/Qwen2.5-3B-Instruct \
   --use-vllm
+```
 
-# Smaller models for low memory GPUs (4GB VRAM)
-python runners/run_qwen.py \
-  --input data/training_all_elements.jsonl \
-  --output results/qwen_0.5b.jsonl \
-  --model-path Qwen/Qwen2.5-0.5B-Instruct
+### 5. Qwen 2.5 1.5B - Budget Option ⭐⭐⭐
 
-python runners/run_llama.py \
-  --input data/training_all_elements.jsonl \
-  --output results/llama_1b.jsonl \
-  --model-path meta-llama/Llama-3.2-1B-Instruct
+```bash
+# Simple mode (comma-separated output)
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_1.5b_test.jsonl \
+  --model-path Qwen/Qwen2.5-1.5B-Instruct
+
+# With reasoning (JSON output with explanations)
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_1.5b_reasoning.jsonl \
+  --model-path Qwen/Qwen2.5-1.5B-Instruct \
+  --with-reasoning
 ```
 
 **For detailed usage examples, see [runners/README.md](runners/README.md)**
@@ -268,19 +355,32 @@ python generate_test_data.py \
   --type medical
 ```
 
-## Memory Requirements
+## Memory Requirements & GPU Selection
 
-**4-bit quantization is enabled by default** for optimal memory usage.
+**4-bit quantization is enabled by default** for optimal memory usage (65-75% reduction).
 
-| Model | FP16 Memory | 4-bit Memory (Default) | Memory Saved |
-|-------|-------------|------------------------|--------------|
-| Qwen 2.5 0.5B | 1.5GB | **0.5GB** | 67% |
-| Llama 3.2 1B | 2.5GB | **1.0GB** | 60% |
-| Qwen 2.5 1.5B | 3.5GB | **1.2GB** | 66% |
-| Qwen 2.5 3B | 6.5GB | **2.3GB** | 65% |
-| Llama 3.2 3B | 6.8GB | **2.5GB** | 63% |
+### Recommended Models by GPU Memory
 
-**See [MEMORY_GUIDE.md](MEMORY_GUIDE.md) for detailed memory calculations and GPU recommendations.**
+| Your GPU VRAM | Recommended Models | Best Choice |
+|---------------|-------------------|-------------|
+| **3GB** | Gemma-2-2B (1.5GB), Qwen 1.5B (1.2GB) | Gemma-2-2B |
+| **4GB** | + Llama 3.2 3B (2.5GB), Qwen 3B (2.3GB) | Qwen 3B |
+| **6GB+** | + Phi-3-mini (2.8GB) | Phi-3-mini |
+| **8GB+** | All models + vLLM mode | Phi-3 + vLLM |
+
+### Memory Usage Table
+
+| Model | Parameters | FP16 RAM | 4-bit RAM | Memory Saved | Min GPU |
+|-------|------------|----------|-----------|--------------|---------|
+| Qwen 2.5 0.5B | 0.5B | 1.5GB | **0.5GB** | 67% | 2GB |
+| Llama 3.2 1B | 1B | 2.5GB | **1.0GB** | 60% | 2GB |
+| Qwen 2.5 1.5B | 1.5B | 3.5GB | **1.2GB** | 66% | 3GB |
+| **Gemma-2-2B** | 2B | 4.5GB | **1.5GB** | 67% | **3GB** |
+| Qwen 2.5 3B | 3B | 6.5GB | **2.3GB** | 65% | 4GB |
+| **Llama 3.2 3B** | 3B | 6.8GB | **2.5GB** | 63% | **4GB** |
+| **Phi-3-mini** | 3.8B | 7.6GB | **2.8GB** | 63% | **4GB** |
+
+**See [MEMORY_GUIDE.md](MEMORY_GUIDE.md) for detailed memory calculations and optimization tips.**
 
 ## Troubleshooting
 
