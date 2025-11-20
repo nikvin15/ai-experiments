@@ -389,7 +389,17 @@ def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str
     }}
   ]
 }}"""
-        response_instruction = "Respond ONLY in JSON format:"
+        response_instruction = """CRITICAL: You MUST respond with ONLY valid JSON. Follow these rules:
+1. Output ONLY the JSON object - no explanatory text before or after
+2. Ensure ALL JSON strings are properly escaped (use \\" for quotes inside strings)
+3. Every opening brace {{ must have a closing brace }}
+4. Every opening bracket [ must have a closing bracket ]
+5. All keys and string values must be in double quotes
+6. Do NOT add trailing commas after the last item in arrays or objects
+7. Keep reason strings concise (under 100 characters) to avoid formatting issues
+8. Test your JSON is valid before responding
+
+Respond in this EXACT format:"""
     else:
         output_format = """Email Address, Social Security Number
 
@@ -605,13 +615,14 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
 
     except json.JSONDecodeError as e:
         logger.error(f"JSON decode error in batch verification: {e}")
+        logger.error(f"Problematic response: {response[:500]}")  # Log first 500 chars
         # Conservative fallback
         if with_reasoning:
             return [
                 {
                     "pii": pii,
                     "verified": True,
-                    "reason": f"JSON parse error: {str(e)}"
+                    "reason": "JSON parsing failed - conservatively marking as verified (privacy-first approach)"
                 }
                 for pii in detected_piis
             ]

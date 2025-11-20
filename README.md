@@ -552,6 +552,76 @@ python generate_test_data.py \
 
 **See [MEMORY_GUIDE.md](MEMORY_GUIDE.md) for detailed memory calculations and optimization tips.**
 
+## Results Analysis - CSV Consolidation
+
+After running multiple models with reasoning mode, consolidate results into a single CSV for easy comparison.
+
+### Quick Start
+
+```bash
+# Consolidate specific model results
+python3 scripts/consolidate_results.py \
+  --inputs results/phi3_mini_4bit_reasoning.jsonl results/gemma_2b_4bit_reasoning.jsonl \
+  --output analysis/comparison.csv
+
+# Consolidate all reasoning results using wildcards
+python3 scripts/consolidate_results.py \
+  --inputs results/*_reasoning.jsonl \
+  --output analysis/all_models_comparison.csv
+
+# Consolidate only 4-bit reasoning results
+python3 scripts/consolidate_results.py \
+  --inputs results/*_4bit_reasoning.jsonl \
+  --output analysis/4bit_comparison.csv
+```
+
+### CSV Output Format
+
+The generated CSV has the following structure:
+
+| Input Text | PII | Model1_Verified | Model1_Reason | Model2_Verified | Model2_Reason | ... |
+|------------|-----|-----------------|---------------|-----------------|---------------|-----|
+| Mr. Adolphus... | First Name | YES | Name belongs to specific person... | YES | Personal identifier... | ... |
+| Mr. Adolphus... | Past Roles or Positions | NO | Job title at organization... | YES | Context suggests personal role... | ... |
+| Hi Alberta... | First Name | YES | Individual name reference... | YES | Personal greeting context... | ... |
+| Hi Alberta... | IP Address | NO | Server IP not personal data... | NO | Infrastructure IP address... | ... |
+
+**Each row represents:**
+- One PII element from one input text
+- How each model verified it (YES/NO/N/A)
+- The reasoning each model provided
+
+### Use Cases
+
+1. **Model Comparison** - Compare how different models evaluate the same PIIs
+2. **Consensus Analysis** - Identify PIIs where models disagree
+3. **Reasoning Review** - Review model explanations side-by-side
+4. **Accuracy Evaluation** - Manually label and calculate accuracy per model
+5. **False Positive Identification** - Find patterns in incorrect verifications
+
+### Example Workflow
+
+```bash
+# Step 1: Run multiple models with reasoning
+python3 runners/run_phi3.py --input data/test_sample.jsonl --output results/phi3_mini_4bit_reasoning.jsonl --model-path microsoft/Phi-3-mini-4k-instruct --with-reasoning
+python3 runners/run_gemma.py --input data/test_sample.jsonl --output results/gemma_2b_4bit_reasoning.jsonl --model-path google/gemma-2-2b-it --with-reasoning
+python3 runners/run_llama.py --input data/test_sample.jsonl --output results/llama_3b_4bit_reasoning.jsonl --model-path meta-llama/Llama-3.2-3B-Instruct --with-reasoning
+
+# Step 2: Consolidate results
+python3 scripts/consolidate_results.py \
+  --inputs results/*_4bit_reasoning.jsonl \
+  --output analysis/3_models_comparison.csv
+
+# Step 3: Open CSV in Excel/Google Sheets for manual review
+```
+
+### Notes
+
+- **Requires reasoning mode** - Only works with `*_reasoning.jsonl` files (not simple comma-separated output)
+- **Input text truncated** - Long texts truncated to 200 chars in CSV for readability
+- **N/A values** - Appears when a model didn't process a specific PII
+- **Automatic directory creation** - Creates `analysis/` directory if it doesn't exist
+
 ## Troubleshooting
 
 ### CUDA Out of Memory
