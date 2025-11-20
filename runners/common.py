@@ -404,7 +404,15 @@ Respond in this EXACT format:"""
         output_format = """Email Address, Social Security Number
 
 (List only the verified PII types, comma-separated. If NONE are verified, respond: NONE)"""
-        response_instruction = "Respond with comma-separated list:"
+        response_instruction = """CRITICAL OUTPUT RULES:
+1. Output ONLY the comma-separated list of verified PII types - nothing else
+2. Do NOT add any explanatory text, commentary, or conversation
+3. Do NOT say "I apologize" or "Let me analyze" or any other text
+4. If you detect PIIs: output ONLY their names separated by commas
+5. If no PIIs are verified: output ONLY the word "NONE"
+6. Do NOT add any text before or after your answer
+
+Respond with comma-separated list:"""
 
     return f"""You are a specialized PII Verification AI. A preliminary system has already flagged potential Personally Identifiable Information (PII) in some text. Your task is to analyze each flagged element and determine if it is genuine personal PII or a false positive.
 
@@ -552,8 +560,31 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
             # Simple mode: Expect comma-separated format
             response_clean = response.strip()
 
-            # Check for explicit NONE response
-            if response_clean.upper() == "NONE" or response_clean.upper() == "NONE.":
+            # Remove common garbage prefixes that models sometimes add
+            garbage_prefixes = [
+                "none your response",
+                "i apologize",
+                "let me analyze",
+                "here is",
+                "the verified",
+                "answer:",
+                "response:",
+            ]
+            response_lower = response_clean.lower()
+            for prefix in garbage_prefixes:
+                if response_lower.startswith(prefix):
+                    # Try to find where the actual comma-separated list starts
+                    # Look for first occurrence of a known PII type or "NONE"
+                    for detected_pii in detected_piis:
+                        idx = response_clean.find(detected_pii)
+                        if idx > 0:
+                            response_clean = response_clean[idx:]
+                            logger.warning(f"Removed garbage prefix, extracted: {response_clean[:100]}")
+                            break
+                    break
+
+            # Check for explicit NONE response (check if NONE appears in first 20 chars)
+            if "NONE" in response_clean[:20].upper():
                 logger.info("LLM returned NONE - no PIIs verified")
                 return []
 
@@ -561,6 +592,20 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
             # Split by comma and clean each item
             parts = [part.strip() for part in response_clean.split(',')]
             parts = [part for part in parts if part and part.upper() != "NONE"]
+
+            # Filter out garbage - only keep parts that could be PII names
+            # (contain only letters, spaces, and basic punctuation)
+            valid_parts = []
+            for part in parts:
+                # Remove any text after newlines
+                if '\n' in part:
+                    part = part.split('\n')[0].strip()
+
+                # Check if this looks like a PII name (not a sentence)
+                if len(part) < 100 and not any(bad in part.lower() for bad in ['apologize', 'analyze', 'response', 'superf00k']):
+                    valid_parts.append(part)
+
+            parts = valid_parts
 
             if parts:
                 # Fuzzy match parsed PIIs against detected PIIs
