@@ -42,13 +42,13 @@ ai-experiments/
 
 ## Input Format (Simplified 3-Key Format)
 
-**GPU models (Llama/Qwen)** use the new simplified format:
+**GPU models (Phi-3/Gemma/Llama/Qwen)** use the simplified format:
 
 ```json
 {
-  "recordId": "de_0001_01",
-  "input": "Patient SSN 123-45-6789 requires authorization",
-  "PIIs": ["Social Security Number"]
+  "recordId": "test_001",
+  "input": "Mr. Adolphus Reagan Ziemann, as a Central Principal Applications Executive at McLaughlin, Nader and Purdy, your knowledge of change management is vital for our company's transformation.",
+  "PIIs": ["First Name", "Past Roles or Positions"]
 }
 ```
 
@@ -56,6 +56,11 @@ ai-experiments/
 - `recordId` - Unique identifier
 - `input` - Text or JSON string to analyze
 - `PIIs` - Array of PII names detected by CPU models (empty for false positives)
+
+**Test Samples** (`data/test_sample.jsonl`):
+- **test_001**: Professional context with name and job title
+- **test_002**: Technical context with name and IP address
+- **test_003**: Medical context with multiple sensitive PIIs (name, nationality, address, medical condition, etc.)
 
 See [data/README.md](data/README.md) for the complete dataset documentation.
 
@@ -65,12 +70,12 @@ See [data/README.md](data/README.md) for the complete dataset documentation.
 
 ```json
 {
-  "recordId": "de_0001_01",
-  "input": "Patient SSN 123-45-6789 requires authorization",
-  "detected_piis": ["Social Security Number"],
-  "verified_piis": ["Social Security Number"],
-  "latency_ms": 45.2,
-  "model": "llama_3.2_3b_4bit"
+  "recordId": "test_001",
+  "input": "Mr. Adolphus Reagan Ziemann, as a Central Principal Applications Executive...",
+  "detected_piis": ["First Name", "Past Roles or Positions"],
+  "verified_piis": ["First Name", "Past Roles or Positions"],
+  "latency_ms": 845.2,
+  "model": "phi3_mini_4bit"
 }
 ```
 
@@ -78,18 +83,23 @@ See [data/README.md](data/README.md) for the complete dataset documentation.
 
 ```json
 {
-  "recordId": "de_0001_01",
-  "input": "Patient SSN 123-45-6789 requires authorization",
-  "detected_piis": ["Social Security Number"],
+  "recordId": "test_002",
+  "input": "Hi Alberta, there have been indications of compromised data linked with our server IP address 66.168.73.147...",
+  "detected_piis": ["First Name", "IP Address"],
   "verified_piis": [
     {
-      "pii": "Social Security Number",
+      "pii": "First Name",
       "verified": true,
-      "reason": "Valid SSN pattern used in medical context for patient authorization"
+      "reason": "Alberta is a personal first name used to address an individual in business context"
+    },
+    {
+      "pii": "IP Address",
+      "verified": false,
+      "reason": "Server IP address belongs to organization infrastructure, not personal device"
     }
   ],
-  "latency_ms": 52.8,
-  "model": "llama_3.2_3b_4bit_reasoning"
+  "latency_ms": 952.8,
+  "model": "phi3_mini_4bit_reasoning"
 }
 ```
 
@@ -197,125 +207,278 @@ python -c "from transformers import AutoModelForCausalLM, AutoTokenizer; \
 | Qwen 2.5 7B | 7B | 14GB | **5.5GB** | Exceeds 5GB limit |
 | Gemma-2-9B | 9B | 18GB | **7.2GB** | Exceeds 5GB limit |
 
-## Quick Start
+## Quick Start - All Commands
+
+### Test Data
+
+All commands use `data/test_sample.jsonl` (6 test records):
+- **test_001**: Professional context - First Name, Past Roles or Positions
+- **test_002**: Technical context - First Name, IP Address (server IP should be rejected)
+- **test_003**: Medical context - Multiple sensitive PIIs
+- **test_004**: SSN validation - Social Security Number
+- **test_005**: Email/Phone false positive - Email Address, Phone Number (toll-free should be rejected)
+- **test_006**: Empty PII test - Social Security Number (ticket ID, should be rejected)
+
+---
 
 ### 1. Phi-3-mini (3.8B) - Best Reasoning ⭐⭐⭐⭐⭐
 
+**Model name format**: `phi3_mini_4bit` | `phi3_mini_4bit_reasoning` | `phi3_mini_vllm` | `phi3_mini_4bit_vllm_reasoning`
+
 ```bash
-# Simple mode (comma-separated output)
+# Default: 4-bit quantization, simple mode
+# Output model name: phi3_mini_4bit
 python3 runners/run_phi3.py \
   --input data/test_sample.jsonl \
-  --output results/phi3_test.jsonl \
+  --output results/phi3_mini_4bit.jsonl \
   --model-path microsoft/Phi-3-mini-4k-instruct
 
-# With reasoning (JSON output with explanations)
+# 4-bit + reasoning mode
+# Output model name: phi3_mini_4bit_reasoning
 python3 runners/run_phi3.py \
   --input data/test_sample.jsonl \
-  --output results/phi3_reasoning.jsonl \
+  --output results/phi3_mini_4bit_reasoning.jsonl \
   --model-path microsoft/Phi-3-mini-4k-instruct \
   --with-reasoning
 
-# With vLLM (faster inference)
+# vLLM mode (no quantization, faster)
+# Output model name: phi3_mini_vllm
 python3 runners/run_phi3.py \
   --input data/test_sample.jsonl \
-  --output results/phi3_vllm.jsonl \
+  --output results/phi3_mini_vllm.jsonl \
   --model-path microsoft/Phi-3-mini-4k-instruct \
   --use-vllm
+
+# vLLM + reasoning mode
+# Output model name: phi3_mini_vllm_reasoning
+python3 runners/run_phi3.py \
+  --input data/test_sample.jsonl \
+  --output results/phi3_mini_vllm_reasoning.jsonl \
+  --model-path microsoft/Phi-3-mini-4k-instruct \
+  --use-vllm \
+  --with-reasoning
+
+# FP16 mode (no quantization, no vLLM)
+# Output model name: phi3_mini
+python3 runners/run_phi3.py \
+  --input data/test_sample.jsonl \
+  --output results/phi3_mini_fp16.jsonl \
+  --model-path microsoft/Phi-3-mini-4k-instruct \
+  --disable-quantization
 ```
+
+---
 
 ### 2. Gemma-2-2B (2B) - Fastest Viable ⭐⭐⭐⭐
 
+**Model name format**: `gemma_2b_4bit` | `gemma_2b_4bit_reasoning` | `gemma_2b_vllm` | `gemma_2b_4bit_vllm_reasoning`
+
 ```bash
-# Simple mode (comma-separated output)
+# Default: 4-bit quantization, simple mode
+# Output model name: gemma_2b_4bit
 python3 runners/run_gemma.py \
   --input data/test_sample.jsonl \
-  --output results/gemma2_test.jsonl \
+  --output results/gemma_2b_4bit.jsonl \
   --model-path google/gemma-2-2b-it
 
-# With reasoning (JSON output with explanations)
+# 4-bit + reasoning mode
+# Output model name: gemma_2b_4bit_reasoning
 python3 runners/run_gemma.py \
   --input data/test_sample.jsonl \
-  --output results/gemma2_reasoning.jsonl \
+  --output results/gemma_2b_4bit_reasoning.jsonl \
   --model-path google/gemma-2-2b-it \
   --with-reasoning
 
-# With vLLM (faster inference)
+# vLLM mode (no quantization, faster)
+# Output model name: gemma_2b_vllm
 python3 runners/run_gemma.py \
   --input data/test_sample.jsonl \
-  --output results/gemma2_vllm.jsonl \
+  --output results/gemma_2b_vllm.jsonl \
   --model-path google/gemma-2-2b-it \
   --use-vllm
+
+# vLLM + reasoning mode
+# Output model name: gemma_2b_vllm_reasoning
+python3 runners/run_gemma.py \
+  --input data/test_sample.jsonl \
+  --output results/gemma_2b_vllm_reasoning.jsonl \
+  --model-path google/gemma-2-2b-it \
+  --use-vllm \
+  --with-reasoning
+
+# FP16 mode (no quantization, no vLLM)
+# Output model name: gemma_2b
+python3 runners/run_gemma.py \
+  --input data/test_sample.jsonl \
+  --output results/gemma_2b_fp16.jsonl \
+  --model-path google/gemma-2-2b-it \
+  --disable-quantization
 ```
+
+---
 
 ### 3. Llama 3.2 3B - Most Accurate ⭐⭐⭐⭐⭐
 
+**Model name format**: `llama_3.2_3b_4bit` | `llama_3.2_3b_4bit_reasoning` | `llama_3.2_3b_vllm` | `llama_3.2_3b_4bit_vllm_reasoning`
+
 ```bash
-# Simple mode (comma-separated output)
+# Default: 4-bit quantization, simple mode
+# Output model name: llama_3.2_3b_4bit
 python3 runners/run_llama.py \
   --input data/test_sample.jsonl \
-  --output results/llama_3b_test.jsonl \
+  --output results/llama_3.2_3b_4bit.jsonl \
   --model-path meta-llama/Llama-3.2-3B-Instruct
 
-# With reasoning (JSON output with explanations)
+# 4-bit + reasoning mode
+# Output model name: llama_3.2_3b_4bit_reasoning
 python3 runners/run_llama.py \
   --input data/test_sample.jsonl \
-  --output results/llama_3b_reasoning.jsonl \
+  --output results/llama_3.2_3b_4bit_reasoning.jsonl \
   --model-path meta-llama/Llama-3.2-3B-Instruct \
   --with-reasoning
 
-# With vLLM (faster inference)
+# vLLM mode (no quantization, faster)
+# Output model name: llama_3.2_3b_vllm
 python3 runners/run_llama.py \
   --input data/test_sample.jsonl \
-  --output results/llama_3b_vllm.jsonl \
+  --output results/llama_3.2_3b_vllm.jsonl \
   --model-path meta-llama/Llama-3.2-3B-Instruct \
   --use-vllm
 
-# Without quantization (FP16 - requires 6.8GB VRAM)
+# vLLM + reasoning mode
+# Output model name: llama_3.2_3b_vllm_reasoning
 python3 runners/run_llama.py \
   --input data/test_sample.jsonl \
-  --output results/llama_3b_fp16.jsonl \
+  --output results/llama_3.2_3b_vllm_reasoning.jsonl \
+  --model-path meta-llama/Llama-3.2-3B-Instruct \
+  --use-vllm \
+  --with-reasoning
+
+# FP16 mode (no quantization, no vLLM)
+# Output model name: llama_3.2_3b
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.2_3b_fp16.jsonl \
   --model-path meta-llama/Llama-3.2-3B-Instruct \
   --disable-quantization
 ```
 
+---
+
 ### 4. Qwen 2.5 3B - Balanced ⭐⭐⭐⭐⭐
 
+**Model name format**: `qwen_2.5_3b_4bit` | `qwen_2.5_3b_4bit_reasoning` | `qwen_2.5_3b_vllm` | `qwen_2.5_3b_4bit_vllm_reasoning`
+
 ```bash
-# Simple mode (comma-separated output)
+# Default: 4-bit quantization, simple mode
+# Output model name: qwen_2.5_3b_4bit
 python3 runners/run_qwen.py \
   --input data/test_sample.jsonl \
-  --output results/qwen_3b_test.jsonl \
+  --output results/qwen_2.5_3b_4bit.jsonl \
   --model-path Qwen/Qwen2.5-3B-Instruct
 
-# With reasoning (JSON output with explanations)
+# 4-bit + reasoning mode
+# Output model name: qwen_2.5_3b_4bit_reasoning
 python3 runners/run_qwen.py \
   --input data/test_sample.jsonl \
-  --output results/qwen_3b_reasoning.jsonl \
+  --output results/qwen_2.5_3b_4bit_reasoning.jsonl \
   --model-path Qwen/Qwen2.5-3B-Instruct \
   --with-reasoning
 
-# With vLLM (faster inference)
+# vLLM mode (no quantization, faster)
+# Output model name: qwen_2.5_3b_vllm
 python3 runners/run_qwen.py \
   --input data/test_sample.jsonl \
-  --output results/qwen_3b_vllm.jsonl \
+  --output results/qwen_2.5_3b_vllm.jsonl \
   --model-path Qwen/Qwen2.5-3B-Instruct \
   --use-vllm
+
+# vLLM + reasoning mode
+# Output model name: qwen_2.5_3b_vllm_reasoning
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_2.5_3b_vllm_reasoning.jsonl \
+  --model-path Qwen/Qwen2.5-3B-Instruct \
+  --use-vllm \
+  --with-reasoning
+
+# FP16 mode (no quantization, no vLLM)
+# Output model name: qwen_2.5_3b
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_2.5_3b_fp16.jsonl \
+  --model-path Qwen/Qwen2.5-3B-Instruct \
+  --disable-quantization
 ```
+
+---
 
 ### 5. Qwen 2.5 1.5B - Budget Option ⭐⭐⭐
 
+**Model name format**: `qwen_2.5_1.5b_4bit` | `qwen_2.5_1.5b_4bit_reasoning` | `qwen_2.5_1.5b_vllm` | `qwen_2.5_1.5b_4bit_vllm_reasoning`
+
 ```bash
-# Simple mode (comma-separated output)
+# Default: 4-bit quantization, simple mode
+# Output model name: qwen_2.5_1.5b_4bit
 python3 runners/run_qwen.py \
   --input data/test_sample.jsonl \
-  --output results/qwen_1.5b_test.jsonl \
+  --output results/qwen_2.5_1.5b_4bit.jsonl \
   --model-path Qwen/Qwen2.5-1.5B-Instruct
 
-# With reasoning (JSON output with explanations)
+# 4-bit + reasoning mode
+# Output model name: qwen_2.5_1.5b_4bit_reasoning
 python3 runners/run_qwen.py \
   --input data/test_sample.jsonl \
-  --output results/qwen_1.5b_reasoning.jsonl \
+  --output results/qwen_2.5_1.5b_4bit_reasoning.jsonl \
   --model-path Qwen/Qwen2.5-1.5B-Instruct \
+  --with-reasoning
+
+# vLLM mode (no quantization, faster)
+# Output model name: qwen_2.5_1.5b_vllm
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_2.5_1.5b_vllm.jsonl \
+  --model-path Qwen/Qwen2.5-1.5B-Instruct \
+  --use-vllm
+
+# vLLM + reasoning mode
+# Output model name: qwen_2.5_1.5b_vllm_reasoning
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_2.5_1.5b_vllm_reasoning.jsonl \
+  --model-path Qwen/Qwen2.5-1.5B-Instruct \
+  --use-vllm \
+  --with-reasoning
+
+# FP16 mode (no quantization, no vLLM)
+# Output model name: qwen_2.5_1.5b
+python3 runners/run_qwen.py \
+  --input data/test_sample.jsonl \
+  --output results/qwen_2.5_1.5b_fp16.jsonl \
+  --model-path Qwen/Qwen2.5-1.5B-Instruct \
+  --disable-quantization
+```
+
+---
+
+### 6. Llama 3.2 1B - Small Model ⭐⭐
+
+**Model name format**: `llama_3.2_1b_4bit` | `llama_3.2_1b_4bit_reasoning` | `llama_3.2_1b_vllm`
+
+```bash
+# Default: 4-bit quantization, simple mode
+# Output model name: llama_3.2_1b_4bit
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.2_1b_4bit.jsonl \
+  --model-path meta-llama/Llama-3.2-1B-Instruct
+
+# 4-bit + reasoning mode
+# Output model name: llama_3.2_1b_4bit_reasoning
+python3 runners/run_llama.py \
+  --input data/test_sample.jsonl \
+  --output results/llama_3.2_1b_4bit_reasoning.jsonl \
+  --model-path meta-llama/Llama-3.2-1B-Instruct \
   --with-reasoning
 ```
 

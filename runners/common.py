@@ -67,13 +67,25 @@ class JSONLReader:
 class JSONLWriter:
     """Write results to JSONL file."""
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, overwrite: bool = True):
+        """
+        Initialize JSONL writer.
+
+        Args:
+            file_path: Path to output JSONL file
+            overwrite: If True, overwrite existing file. If False, append to existing file.
+        """
         self.file_path = Path(file_path)
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Open file in append mode
-        self.file = open(self.file_path, 'a', encoding='utf-8')
-        logger.info(f"Writing results to: {self.file_path}")
+        # Open file in write mode (overwrite) or append mode
+        mode = 'w' if overwrite else 'a'
+        self.file = open(self.file_path, mode, encoding='utf-8')
+
+        if overwrite:
+            logger.info(f"Writing results to: {self.file_path} (overwrite mode)")
+        else:
+            logger.info(f"Appending results to: {self.file_path}")
 
     def write(self, record: Dict):
         """
