@@ -4,32 +4,39 @@ Experiment framework for testing CPU and GPU-based PII verification models with 
 
 ## Key Features
 
-- **4-bit Quantization by Default** - 65-75% memory reduction for GPU models
-- **Batch PII Verification** - LLMs filter false positives from CPU model detections
-- **Two Output Modes** - Simple (list) or reasoning (detailed explanations)
+- **4-bit Quantization by Default** - 65-75% memory reduction for GPU models (all ≤5GB RAM)
+- **Batch PII Verification** - LLMs verify multiple PIIs per input with 3-test framework
+- **121 Data Element Descriptions** - Context-aware verification using element definitions
+- **Two Output Modes** - Simple (comma-separated) or reasoning (JSON with explanations)
+- **4 Optimized Runners** - Phi-3, Gemma-2, Llama 3.2, Qwen 2.5 with universal prompts
 - **Auto-Download Models** - Models download from HuggingFace automatically
-- **Comprehensive Training Data** - 484 records covering 121 data elements
+- **Comprehensive Training Data** - 484 records covering all 121 data elements
 
 ## Directory Structure
 
 ```
 ai-experiments/
 ├── runners/              # Model runner scripts
+│   ├── run_phi3.py             # GPU: Phi-3-mini (3.8B) - 4-bit default
+│   ├── run_gemma.py            # GPU: Gemma-2-2B (2B) - 4-bit default
 │   ├── run_llama.py            # GPU: Llama 3.2 (1B/3B) - 4-bit default
 │   ├── run_qwen.py             # GPU: Qwen 2.5 (0.5B/1.5B/3B) - 4-bit default
 │   ├── run_distilbert.py       # CPU: DistilBERT PII verification
 │   ├── run_gliner.py           # CPU: GLiNER financial entities
 │   ├── run_phibert.py          # CPU: PHI BERT medical entities
-│   ├── common.py               # Shared utilities
+│   ├── common.py               # Shared utilities & prompt templates
 │   └── README.md               # Detailed runner documentation
 ├── data/                 # Training and test JSONL files
 │   ├── training_all_elements.jsonl  # 484 records, 121 data elements
+│   ├── test_sample.jsonl            # 3 records for quick testing
 │   ├── training_summary.md          # Dataset documentation
 │   └── README.md                    # Data format guide
 ├── results/              # Output JSONL files
 │   └── [model]_results.jsonl
 ├── models/               # Downloaded model weights (auto-created)
+├── default_data_elements.json  # 121 PII element descriptions
 ├── MEMORY_GUIDE.md       # GPU memory requirements guide
+├── EXPERIMENTS_GUIDE.md  # Experiment workflow guide
 └── requirements.txt      # Python dependencies
 ```
 
