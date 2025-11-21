@@ -21,5 +21,8 @@ gliner>=0.2.0
 # Tokenizers
 tiktoken>=0.5.0  # Required for Phi-3-small and some other models
 
+# Tensor Operations
+einops>=0.7.0  # Required for Phi-3-small (Einstein Operations for tensor manipulation)
+
 # Utilities
 tqdm>=4.66.0

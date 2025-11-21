@@ -389,17 +389,19 @@ def load_batch_verification_prompt_template(with_reasoning: bool = False) -> str
     }}
   ]
 }}"""
-        response_instruction = """CRITICAL: You MUST respond with ONLY valid JSON. Follow these rules:
-1. Output ONLY the JSON object - no explanatory text before or after
-2. Ensure ALL JSON strings are properly escaped (use \\" for quotes inside strings)
-3. Every opening brace {{ must have a closing brace }}
-4. Every opening bracket [ must have a closing bracket ]
-5. All keys and string values must be in double quotes
-6. Do NOT add trailing commas after the last item in arrays or objects
-7. Keep reason strings concise (under 100 characters) to avoid formatting issues
-8. Test your JSON is valid before responding
+        response_instruction = """CRITICAL JSON OUTPUT REQUIREMENTS:
+1. Output ONLY a valid JSON object - nothing else
+2. Do NOT wrap JSON in markdown code blocks (no ```)
+3. Do NOT add any explanatory text before or after the JSON
+4. Start your response with { and end with }
+5. Ensure all strings are properly escaped (use \\" for quotes inside strings)
+6. Match all braces and brackets: {{ }} [ ]
+7. Use double quotes for all keys and string values
+8. No trailing commas after last items
+9. Keep reason strings under 100 characters
+10. Boolean values must be lowercase: true, false (not True, False)
 
-Respond in this EXACT format:"""
+Your ENTIRE response must be this JSON object:"""
     else:
         output_format = """Email Address, Social Security Number
 
@@ -523,35 +525,70 @@ def parse_batch_verification_response(response: str, detected_piis: List[str], w
     try:
         if with_reasoning:
             # Reasoning mode: Expect JSON format
-            start = response.find('{')
-            end = response.rfind('}') + 1
+            response_clean = response.strip()
+
+            # Remove markdown code blocks if present
+            if response_clean.startswith('```'):
+                # Remove opening ```json or ```
+                lines = response_clean.split('\n')
+                if lines[0].startswith('```'):
+                    lines = lines[1:]
+                # Remove closing ```
+                if lines and lines[-1].strip() == '```':
+                    lines = lines[:-1]
+                response_clean = '\n'.join(lines).strip()
+
+            # Handle case where LLM returns ONLY markdown markers with no content
+            if not response_clean or response_clean == '```':
+                logger.error("LLM returned empty or invalid response (only markdown markers)")
+                logger.error("This usually means the model is confused by the prompt format")
+                logger.error("Falling back to rejecting all PIIs for safety")
+                return [
+                    {
+                        "pii": pii,
+                        "verified": False,
+                        "reason": "LLM failed to provide valid JSON response"
+                    }
+                    for pii in detected_piis
+                ]
+
+            # Find JSON boundaries
+            start = response_clean.find('{')
+            end = response_clean.rfind('}') + 1
 
             if start >= 0 and end > start:
-                json_str = response[start:end]
+                json_str = response_clean[start:end]
+
+                # Fix common JSON issues before parsing
+                # Replace Python-style booleans with JSON booleans
+                json_str = json_str.replace(': True', ': true').replace(': False', ': false')
+
                 result = json.loads(json_str)
 
                 # Expecting: {"results": [{"pii": "...", "verified": true, "reason": "..."}]}
                 if "results" in result and isinstance(result["results"], list):
                     return result["results"]
                 else:
-                    # Fallback: assume all detected PIIs are verified
-                    logger.warning("Unexpected reasoning format, using fallback")
+                    # Fallback: reject all for safety (better than false positives)
+                    logger.warning("Unexpected reasoning format (missing 'results' key)")
+                    logger.warning(f"Got keys: {list(result.keys())}")
                     return [
                         {
                             "pii": pii,
-                            "verified": True,
-                            "reason": "Parse error - assuming verified"
+                            "verified": False,
+                            "reason": "Parse error - unexpected JSON structure"
                         }
                         for pii in detected_piis
                     ]
             else:
-                # No JSON found
-                logger.warning("No JSON found in reasoning response, using fallback")
+                # No JSON found - reject all for safety
+                logger.warning("No JSON found in reasoning response")
+                logger.warning(f"Response was: {response_clean[:200]}")
                 return [
                     {
                         "pii": pii,
-                        "verified": True,
-                        "reason": "No JSON found - assuming verified"
+                        "verified": False,
+                        "reason": "No valid JSON in response"
                     }
                     for pii in detected_piis
                 ]
